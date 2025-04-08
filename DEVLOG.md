@@ -56,8 +56,8 @@ GitHub:
 - Verified everything still runs after migrations
 
 **Readme & docs:**
-- Finalized `README.md` for teammates — includes setup instructions, tech stack, and contributor list
-- Ensured `.env` is excluded and future teammates can use `.env.example`
+- Finalized `README.md` — includes setup instructions, tech stack, and contributor list
+- Ensured `.env` is excluded
 
 ---
 
