@@ -115,6 +115,7 @@ Log in using your superuser credentials.
 | `/api/all-variants/<product_id>/` | Lists all variants for a product |
 | `/api/categories/` | Lists all product categories |
 | `/api/products-by-category/<category_id>/` | Lists products in a specific category |
+|`/api/basket/`: | POST basket data, returns total price per supermarket | 
 
 > Test them in Postman or browser while the dev server is running.
 
