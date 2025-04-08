@@ -1,29 +1,31 @@
-# Kolik – Secure Supermarket Price Comparison App
+## Kolik – Secure Supermarket Price Comparison App
 
-Kolik is a full-stack web application that allows users in the Czech Republic to compare grocery prices across supermarkets, helping them find the best deal for each item and their whole shopping basket.
+**Kolik** is a full-stack web application that helps users in the Czech Republic compare grocery prices across supermarkets, showing them the best deal for each item and their whole shopping basket.
 
 ---
 
 ## Project Overview
 
 - **Backend**: Django + Django REST Framework  
-- **Frontend**: Will be added soon   
-- **Admin Panel**: Used for entering real product data  
-- **Multilingual**: Czech + English support  
+- **Frontend**: Coming soon (React or HTML/CSS/JS)  
+- **Admin Panel**: For entering real supermarket product data  
+- **Multilingual**: Supports Czech + English   
 
 ---
 
-## Features Implemented (Backend )
+## Features Implemented (Backend)
 
-- [x] Secure Django backend setup with `.env`  
+- [x] Secure Django backend setup using `.env` for secrets  
 - [x] Product models: generic products vs. supermarket-specific variants  
 - [x] Supermarket & category models  
-- [x] Admin panel to manage prices and images  
+- [x] Admin panel for product/image/price management  
 - [x] REST API endpoints:
-  - Best deal per product
-  - All product variants
+  - Best deal per product (by ID)
+  - List of all product variants  
+  - All categories
+  - Products by category  
 - [x] Czech + English internationalization  
-- [x] Static + media file support  
+- [x] Static and media file support  
 
 ---
 
@@ -32,80 +34,103 @@ Kolik is a full-stack web application that allows users in the Czech Republic to
 | Part      | Stack                          |
 |-----------|--------------------------------|
 | Backend   | Python, Django, Django REST    |
-| Frontend  | Coming soon (React or HTML)    |
+| Frontend  | HTML/CSS/JS                    |
 | Database  | SQLite (PostgreSQL later)      |
 | Hosting   | Render.com (planned)           |
 
 ---
 
-##  Project Structure
+## Project Structure
 
-Kolik/  
-├── backend/        # Django backend  
-│   ├── config/  
-│   ├── core/  
-│   └── ...  
-├── frontend/       # Frontend will go here later  
-├── README.md       # Main project overview  
-└── DEVLOG.md       # Daily development log  
+```
+Kolik/
+├── backend/        # Django backend
+│   ├── config/     # Main project settings & URLs
+│   ├── core/       # Main app (models, views, API)
+│   ├── db.sqlite3  # Local database (dev only)
+│   ├── .env        # Local secrets file (not pushed)
+│   ├── manage.py   # Django CLI entry point
+│   └── requirements.txt  # Python dependencies
+├── frontend/       # Frontend will be added later
+├── README.md       # Main project overview
+└── DEVLOG.md       # Daily progress log
+```
 
 ---
 
-## 🛠Local Setup (Backend)
+##Local Setup Instructions (Backend)
 
-### Step 1: Clone the repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/agatalangova17/Kolik.git
 cd Kolik/backend
 ```
 
-### Step 2: Create and activate virtual environment
+### 2. Create & activate virtual environment
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Step 3: Install dependencies
+### 3. Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 4: Set up `.env` file in `/backend/` with:
+### 4. Set up `.env` in `backend/`
+
+Create a file called `.env` and paste in:
 
 ```env
 SECRET_KEY=your-secret-key
 DEBUG=True
 ```
 
-### Step 5: Run migrations and start the server
+>  Never commit real secrets — this file is in `.gitignore`.
+
+### 5. Run migrations & start server
 
 ```bash
 python manage.py migrate
 python manage.py runserver
 ```
 
-### Step 6: Access the admin panel
+### 6. Access the admin panel
 
-Open [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin) in your browser and log in.
+Visit:  
+[http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin)
+
+Log in using your superuser credentials.
 
 ---
 
-##  Team
+## Available API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/best-deal/<product_id>/` | Returns the cheapest product variant |
+| `/api/all-variants/<product_id>/` | Lists all variants for a product |
+| `/api/categories/` | Lists all product categories |
+| `/api/products-by-category/<category_id>/` | Lists products in a specific category |
+
+> Test them in Postman or browser while the dev server is running.
+
+---
+
+## Team
 
 - **Agáta Langová** – Backend development  
-- **Dawid Piorkowski**
-- **Nokulunga Motsweni**
-- **Dren Krasniqi**
+- **Dawid Piorkowski** – Frontend development  
+- **Nokulunga Motsweni**  
+- **Dren Krasniqi**  
 - **Teo Bocev**
 
 ---
 
 ## Project Timeline
 
-- Development: April – May 2025  
-- MVP Launch Goal: June 2025  
-
-
+-  **Development**: April – May 2025  
+-  **MVP Launch Goal**: June 2025  
