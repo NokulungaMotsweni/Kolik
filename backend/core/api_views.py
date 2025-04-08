@@ -117,4 +117,21 @@ def products_by_category(request, category_id):
         })
 
     except Category.DoesNotExist:
-        return Response({"error": "Category not found"}, status=404)        
+        return Response({"error": "Category not found"}, status=404) 
+
+# View 6: All generic products are listed (for search or full display)
+@api_view(['GET'])
+def list_all_products(request):
+    products = GenericProduct.objects.select_related('category').all()
+    data = []
+
+    for product in products:
+        data.append({
+            "id": product.id,
+            "name": product.name,
+            "amount": float(product.amount),
+            "unit": product.unit,
+            "category": product.category.name,
+        })
+
+    return Response(data)               
