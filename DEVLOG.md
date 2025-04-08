@@ -1,9 +1,9 @@
-# Dev Log — Kolik Backend
+# Dev Log — Kolik Backend  
 _Started April 7, 2025_
 
 ---
 
-###  2025-04-07 — Project Kickoff (Agáta)
+### 2025-04-07 — Project Kickoff (Agáta)
 
 Set up backend from scratch:
 - Created virtual environment, started Django project (`config`)
@@ -12,7 +12,7 @@ Set up backend from scratch:
 
 Models created:
 - `Supermarket`: Tesco, Billa, Albert
-- `Category`: e.g., Dairy, Bakery
+- `Category`: e.g., Dairy, Bakery, Vegetables..
 - `GenericProduct`: shared products like "Whole milk 1L"
 - `ProductVariant`: specific brands with price, supermarket, image
 
@@ -27,8 +27,42 @@ REST API (Django REST Framework): created 2 API endpoints
 GitHub:
 - Repo initialized, first full commit & push complete
 
+---
 
-Tomorrow:
-- Start `/api/basket/` logic (compare total price across supermarkets)
-- Add `/api/products/` list endpoint
-- Add filtering or search options if time allows
+### 2025-04-08 — Backend Refinement & API Expansion (Agáta)
+
+**Code cleanup & repo structure:**
+- Added comments to `settings.py` 
+- Cleaned `urls.py` in both `config` and `core` apps and added comments
+- Confirmed `.gitignore` safely ignores `.env` and `db.sqlite3` (local only)
+
+**API development:**
+- Reorganized `api_views.py` and grouped endpoints:
+  - `/api/categories/` – List of all categories
+  - `/api/products-by-category/<category_id>/` – All generic products in one category
+  - `/api/best-deal/<product_id>/` – Cheapest product variant for one generic product
+  - `/api/all-variants/<product_id>/` – All variants for one generic product
+
+**Frontend collaboration support:**
+- Planned shared document: `for_frontend_devs.md` to explain:
+  - How to test API
+  - Where to find `.env.example` and seed data script (I will create that) to preload MVP data
+  - How to access product data
+
+
+**Admin & DB work:**
+- Confirmed image field works in admin panel
+- Clarified product structure: generic product vs. supermarket-specific variant
+- Verified everything still runs after migrations
+
+**Readme & docs:**
+- Finalized `README.md` for teammates — includes setup instructions, tech stack, and contributor list
+- Ensured `.env` is excluded and future teammates can use `.env.example`
+
+---
+
+**Tomorrow:**
+- Create and commit `seed_data.py` with full MVP product dataset  
+- Create `for_frontend_devs.md` with endpoint list and setup guide  
+- Add basket total comparison endpoint (`/api/basket/`)  
+- Discuss user accounts
