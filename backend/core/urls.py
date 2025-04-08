@@ -4,7 +4,8 @@ from .api_views import (
     all_variants_by_product,
     list_categories,
     products_by_category,
-    list_all_products, 
+    list_all_products,
+    calculate_basket, 
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('categories/', list_categories),
     path('products-by-category/<int:category_id>/', products_by_category),
     path('products/', list_all_products),
+    path('basket/', calculate_basket),
 ]
