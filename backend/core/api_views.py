@@ -1,8 +1,9 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from core.models import GenericProduct, ProductVariant
+from core.models import Category
 
-# 🥇 View 1: Best deal by product name
+# View 1: Returns the cheapest product variant by product name - OPTIONAL for now second view is more accurate as it relies on ID
 @api_view(['GET'])
 def best_deal(request, product_name):
     try:
@@ -12,6 +13,7 @@ def best_deal(request, product_name):
         if not variants.exists():
             return Response({"error": "No variants found for this product."}, status=404)
 
+        # Find the variant with the lowest price
         best_variant = min(variants, key=lambda x: x.price)
 
         data = {
@@ -28,7 +30,8 @@ def best_deal(request, product_name):
     except GenericProduct.DoesNotExist:
         return Response({"error": "Product not found."}, status=404)
 
-# 🥈 View 2: Best deal by product ID (use this one for now!)
+
+# View 2: Returns the best deal using product ID (this one is preferred)
 @api_view(['GET'])
 def best_deal_by_id(request, product_id):
     try:
@@ -50,8 +53,10 @@ def best_deal_by_id(request, product_id):
         })
 
     except GenericProduct.DoesNotExist:
-        return Response({"error": "Product not found."}, status=404)  
+        return Response({"error": "Product not found."}, status=404)
 
+
+# View 3: Returns all available variants for a given product (by ID)
 @api_view(['GET'])
 def all_variants_by_product(request, product_id):
     try:
@@ -80,4 +85,36 @@ def all_variants_by_product(request, product_id):
         })
 
     except GenericProduct.DoesNotExist:
-        return Response({"error": "Product not found."}, status=404)        
+        return Response({"error": "Product not found."}, status=404)
+
+#  View 4: List all categories (e.g. Dairy, Bakery)
+@api_view(['GET'])
+def list_categories(request):
+    categories = Category.objects.all()
+    data = [{"id": cat.id, "name": cat.name} for cat in categories]
+    return Response(data)
+
+
+# View 5: List all products inside a category
+@api_view(['GET'])
+def products_by_category(request, category_id):
+    try:
+        category = Category.objects.get(id=category_id)
+        products = GenericProduct.objects.filter(category=category)
+        data = []
+
+        for product in products:
+            data.append({
+                "id": product.id,
+                "name": product.name,
+                "amount": float(product.amount),
+                "unit": product.unit
+            })
+
+        return Response({
+            "category": category.name,
+            "products": data
+        })
+
+    except Category.DoesNotExist:
+        return Response({"error": "Category not found"}, status=404)        

@@ -1,28 +1,28 @@
-from decouple import config #lets us load secrets from .env
-from pathlib import Path #handles file paths
-from django.utils.translation import gettext_lazy as _
+from decouple import config  # Loads secrets from .env file
+from pathlib import Path  # Helps manage file paths
+from django.utils.translation import gettext_lazy as _  # For multilingual support
 
-# Base directory for the project (where manage.py lives)
+# Base directory for the project 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Security stuff - used for security, detailed errors, list of domains/IPs allowed to access the site
-SECRET_KEY = config('SECRET_KEY')  # NEVER HARDCODE
-DEBUG = config('DEBUG', cast=bool)
-ALLOWED_HOSTS = []  # will be updated for deployment
+# Security settings
+SECRET_KEY = config('SECRET_KEY')  # NEVER hardcode this key
+DEBUG = config('DEBUG', cast=bool)  # Set to False in production!
+ALLOWED_HOSTS = []  # We will add IP/domain names when deploying
 
-# Installed apps - default apps, third party apps, own apps like products, users
+# Installed Django apps
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'core',
-    'rest_framework',
+    'django.contrib.admin',           # Admin interface
+    'django.contrib.auth',            # User authentication
+    'django.contrib.contenttypes',    # Content type system
+    'django.contrib.sessions',        # Session framework
+    'django.contrib.messages',        # Messaging framework
+    'django.contrib.staticfiles',     # Serving static files
+    'core',                           # Our custom app
+    'rest_framework',                 # Django REST Framework for APIs
 ]
 
-# pipeline that processes every request and response eg: session handling, CSRF protection, authentication, security headers - almost never changes unless we want to add special stuff
+# Middleware - handles requests and responses
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -33,19 +33,19 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+#  Main URL config and WSGI app
+ROOT_URLCONF = 'config.urls'  # Points to our main routing file
+WSGI_APPLICATION = 'config.wsgi.application'  # Used for deployment
 
-ROOT_URLCONF = 'config.urls' # tells Django where main urls.py is
-WSGI_APPLICATION = 'config.wsgi.application' # entry point for production servers (like Render)
-
-# Database config — using SQLite for now (will switch to PostgreSQL later)
+# Database setup (SQLite for now; PostgreSQL later for deployment)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django.db.backends.sqlite3',  # Simple local DB
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
-# Password validation (pretty standard)
+# 🔑 Password validators (standard Django defaults)
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -53,29 +53,36 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Language and timezone
-LANGUAGE_CODE = 'en-us'
-LANGUAGES = [
+# Internationalization (Multilingual Support)
+LANGUAGE_CODE = 'en-us'  # Default language
+
+LANGUAGES = [  # Supported languages in the app
     ('en', _('English')),
     ('cs', _('Czech')),
 ]
-TIME_ZONE = 'Europe/Prague'
 
-USE_I18N = True
-USE_TZ = True
+TIME_ZONE = 'Europe/Prague'  # Local time zone
 
-# Static files (CSS, JS, images)
-STATIC_URL = 'static/'
+USE_I18N = True  # Enable translation system
+USE_TZ = True    # Enable timezone-aware datetimes
 
-# Default ID field type for models
+# Static files (CSS, JavaScript, admin styles)
+STATIC_URL = 'static/'  # Where static files are served from during development
+
+
+# Media files (user uploads product images)
+MEDIA_URL = '/media/'  # URL to access uploaded media
+MEDIA_ROOT = BASE_DIR / 'media'  # Folder where uploaded media gets stored
+
+# Default primary key type for all models
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-#Load template files (for admin, pages, etc.) and handles dynamic content like user data
+#  Templates (used by admin and custom pages)
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        'DIRS': [],  
+        'APP_DIRS': True,  
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -86,7 +93,3 @@ TEMPLATES = [
         },
     },
 ]
-
-#tells Django to store images
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'

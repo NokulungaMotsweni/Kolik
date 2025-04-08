@@ -20,3 +20,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# manage.py — Django’s command-line utility for common project tasks
+# You use this to run the server, make migrations, create admin users, etc.
+# No need to modify this file.
