@@ -59,11 +59,18 @@ GitHub:
 **Readme & docs:**
 - Finalized `README.md` — includes setup instructions, tech stack, and contributor list
 - Ensured `.env` is excluded
+### 2025-04-08 — Basket Logic & Admin Cleanup (Agáta)
+
+**Cheapest basket logic:**
+- Implemented `/api/basket/` endpoint:
+  → Calculates total price for user's basket per supermarket.
+  → Logic uses **cheapest available variant** in each store.
+  → Example GET request included.
+
+- Fixed price miscalculation bug: now correctly handles carton quantities (e.g., eggs 10pcs).
+
+- Final testing, pushed all working changes to GitHub.
 
 ---
 
-**Tomorrow:**
-- Create and commit `seed_data.py` with full MVP product dataset  
-- Create `for_frontend_devs.md` with endpoint list and setup guide  
-- Add basket total comparison endpoint (`/api/basket/`)  
-- Discuss user accounts
+
