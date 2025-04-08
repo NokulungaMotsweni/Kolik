@@ -42,6 +42,7 @@ GitHub:
   - `/api/products-by-category/<category_id>/` – All generic products in one category
   - `/api/best-deal/<product_id>/` – Cheapest product variant for one generic product
   - `/api/all-variants/<product_id>/` – All variants for one generic product
+  - Added new API endpoint /api/products/ to return all generic products (useful maybe for frontend to display full product list)
 
 **Frontend collaboration support:**
 - Planned shared document: `for_frontend_devs.md` to explain:
