@@ -71,12 +71,39 @@ GitHub:
 
 - Final testing, pushed all working changes to GitHub.
 
-### 2025-04-10 
+## April 10 – Backend Progress (User Accounts, Refactors, Data Seeding)
 
-**Added seed data script (Agáta):**
-- Created seed_data.py to preload the database with our MVP products.
-- Updated the calculate_basket API view to return not just total prices per supermarket but also highlight the cheapest supermarket.
-- Pushed model refactor and user auth structure to new branch `user-auth-setup`.
+### Planning & Structure
+- Created `models/products.py` and `models/users.py` for better modularity.
+- Updated `core/models/__init__.py` to import models cleanly.
+- Linked everything in `AUTH_USER_MODEL` as `core.CustomUser`.
+
+### Custom User Model Setup
+- Created `CustomUser` model with the following fields:
+  - UUID primary key (`id`)
+  - Unique `email` (used for login)
+  - `phone_number`
+  - Flags: `is_email_verified`, `is_phone_verified`
+  - Consent timestamps: `terms_accepted_at`, `privacy_policy_accepted_at`
+  - Standard fields: `is_active`, `is_staff`, `date_joined`
+- Created `CustomUserManager` to handle user creation and superuser logic.
+
+### User Auth & Migration Flow
+- Set up `AUTH_USER_MODEL` in `settings.py`.
+- Removed default DB and flushed tables to apply UUID changes.
+- Ran `makemigrations` and `migrate` successfully.
+- Created a new superuser to confirm functionality with UUIDs.
+
+### Data Seeding
+- Cleaned old data.
+- Successfully ran `core/seed_data.py` to import MVP product variants.
+- Script tested and confirmed working without duplicates.
+
+### Git & Branch Management
+- Pushed initial model refactor and user structure to `user-auth-setup` branch.
+- Merged changes back into `main` after testing.
+- Removed working branch post-merge.
+- Cleaned commit history by committing only tested updates to `main`.
 ---
 
 
