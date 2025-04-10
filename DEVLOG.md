@@ -71,6 +71,12 @@ GitHub:
 
 - Final testing, pushed all working changes to GitHub.
 
+### 2025-04-10 
+
+**Added seed data script (Agáta):**
+- Created seed_data.py to preload the database with our MVP products.
+
+
 ---
 
 
