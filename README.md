@@ -25,7 +25,10 @@
   - All categories
   - Products by category  
 - [x] Czech + English internationalization  
-- [x] Static and media file support  
+- [x] Static and media file support
+- [X] Custom user model (UUID-based, email as login)
+- [x] Secure user registration architecture (email + phone verification)
+- [x] UUID used as primary key instead of integer ID  
 
 ---
 
@@ -118,6 +121,12 @@ Log in using your superuser credentials.
 |`/api/basket/`: | POST basket data, returns total price per supermarket | 
 
 > Test them in Postman or browser while the dev server is running.
+
+## Important Notes
+
+- Custom user authentication is enabled (UUID-based IDs, email login).
+- Only verified users (email + phone) will be active in the future release.
+- Make sure to run `python manage.py createsuperuser` after initial setup.
 
 ---
 
