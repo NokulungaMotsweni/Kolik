@@ -2,12 +2,12 @@ from core.models import Supermarket, Category, GenericProduct, ProductVariant
 from django.utils.timezone import make_aware
 from datetime import datetime
 
-# Create supermarkets
+# Supermarkets
 tesco = Supermarket.objects.get_or_create(name="Tesco")[0]
 billa = Supermarket.objects.get_or_create(name="Billa")[0]
 albert = Supermarket.objects.get_or_create(name="Albert")[0]
 
-# Create categories
+# Categories
 dairy = Category.objects.get_or_create(name="Dairy")[0]
 bakery = Category.objects.get_or_create(name="Bakery")[0]
 vegetables = Category.objects.get_or_create(name="Vegetables")[0]
