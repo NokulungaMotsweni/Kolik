@@ -1,4 +1,4 @@
-# Dev Log — Kolik Backend  
+# Dev Log — Kolik 
 _Started April 7, 2025_
 
 ---
