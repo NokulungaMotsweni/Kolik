@@ -76,7 +76,7 @@ GitHub:
 **Added seed data script (Agáta):**
 - Created seed_data.py to preload the database with our MVP products.
 - Updated the calculate_basket API view to return not just total prices per supermarket but also highlight the cheapest supermarket.
-
+- Pushed model refactor and user auth structure to new branch `user-auth-setup`.
 ---
 
 
