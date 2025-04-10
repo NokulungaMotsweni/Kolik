@@ -12,7 +12,7 @@ dairy = Category.objects.get_or_create(name="Dairy")[0]
 bakery = Category.objects.get_or_create(name="Bakery")[0]
 vegetables = Category.objects.get_or_create(name="Vegetables")[0]
 eggs = Category.objects.get_or_create(name="Eggs")[0]
-packaged goods = Category.objects.get_or_create(name="Packaged Goods")[0]
+packaged_goods = Category.objects.get_or_create(name="Packaged Goods")[0]
 
 
 
@@ -67,7 +67,7 @@ ProductVariant.objects.get_or_create(name="BILLA Premium Čerstvá vejce slepic 
 ProductVariant.objects.get_or_create(name="Podestýlková vejce Srdce domova M", price=79.9, supermarket=billa, generic_product=eggs_size_m, last_updated=make_aware(datetime.now()))
 
 # Rohlik
-rohlik = GenericProduct.objects.get_or_create(name="Rohlik", amount=1.0, unit="pcs", category=bread)[0]
+rohlik = GenericProduct.objects.get_or_create(name="Rohlik", amount=1.0, unit="pcs", category=bakery)[0]
 ProductVariant.objects.get_or_create(name="Rohlík", price=2.9, supermarket=albert, generic_product=rohlik, last_updated=make_aware(datetime.now()))
 ProductVariant.objects.get_or_create(name="Rohlík", price=2.9, supermarket=billa, generic_product=rohlik, last_updated=make_aware(datetime.now()))
 ProductVariant.objects.get_or_create(name="Rohlík tukový", price=2.8, supermarket=tesco, generic_product=rohlik, last_updated=make_aware(datetime.now()))
