@@ -140,6 +140,7 @@ def list_all_products(request):
 
 
 
+
 # View 7 - Cheapest basket total across supermarkets
 @api_view(['GET', 'POST'])
 def calculate_basket(request):
@@ -154,14 +155,13 @@ def calculate_basket(request):
             "instructions": "Send a POST request to this endpoint with JSON like the above to calculate the basket price at each supermarket."
         })
 
-    
     basket = request.data.get("basket", [])
     if not basket:
         return Response({"error": "Basket is empty or missing."}, status=400)
 
     supermarket_totals = {}  # e.g. { 'Tesco': 97.80, 'Albert': 102.90 }
 
-    # We go through each product in basket
+    # Goes through each product in basket
     for item in basket:
         product_id = item.get("product_id")
         quantity = item.get("quantity", 1)  # default = 1
@@ -170,17 +170,17 @@ def calculate_basket(request):
             product = GenericProduct.objects.get(id=product_id)
             variants = ProductVariant.objects.filter(generic_product=product)
 
-            # We find the cheapest variant per supermarket
+            # Finds the cheapest variant per supermarket
             cheapest_by_supermarket = {}
             for variant in variants:
                 market = variant.supermarket.name
                 price = Decimal(variant.price)
 
-                # We save the cheapest variant per supermarket
+                # Saves the cheapest variant per supermarket
                 if market not in cheapest_by_supermarket or price < cheapest_by_supermarket[market].price:
                     cheapest_by_supermarket[market] = variant
 
-            # We add product cost to each supermarket's total
+            # Adds product cost to each supermarket's total
             for market, variant in cheapest_by_supermarket.items():
                 price = Decimal(variant.price) * Decimal(quantity)
 
@@ -192,8 +192,19 @@ def calculate_basket(request):
         except GenericProduct.DoesNotExist:
             return Response({"error": f"Product with ID {product_id} not found."}, status=404)
 
-    # Total is rounded to 2 decimal places
-    for market in supermarket_totals:
-        supermarket_totals[market] = round(supermarket_totals[market], 2)
+    # Formats the output nicely 
+    results = [
+        {"supermarket": market, "total": round(total, 2)}
+        for market, total in supermarket_totals.items()
+    ]
 
-    return Response(supermarket_totals)
+    # Finds the cheapest supermarket
+    if results:
+        cheapest = min(results, key=lambda x: x["total"])
+    else:
+        cheapest = None
+
+    return Response({
+        "results": results,
+        "cheapest_supermarket": cheapest
+    })
