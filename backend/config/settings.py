@@ -93,3 +93,7 @@ TEMPLATES = [
         },
     },
 ]
+
+
+
+AUTH_USER_MODEL = 'core.CustomUser'
