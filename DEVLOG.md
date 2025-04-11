@@ -105,9 +105,12 @@ GitHub:
 - Removed working branch post-merge.
 - Cleaned commit history by committing only tested updates to `main`.
 
-### 2025-04-11 
-- Implemented and registered the CustomUser model in the Django admin panel.
-- Verified admin panel works correctly, showing email, phone number, and verification status.
+### 2025-04-11 — Admin Panel & Verification Testing (Agáta)
+
+- Implemented and registered the CustomUser model in the Django admin panel
+- Verified admin panel shows all user data cleanly (email, phone, verification status)
+- Fixed `add_fieldsets` bug to allow user creation via admin
+- Confirmed UUID login and permissions working as expected
 ---
 
 
