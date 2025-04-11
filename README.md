@@ -7,8 +7,7 @@
 ## Project Overview
 
 - **Backend**: Django + Django REST Framework  
-- **Frontend**: Coming soon (React or HTML/CSS/JS)  
-- **Admin Panel**: For entering real supermarket product data  
+- **Frontend**: HTML/CSS/JS  
 - **Multilingual**: Supports Czech + English   
 
 ---
@@ -23,7 +22,8 @@
   - Best deal per product (by ID)
   - List of all product variants  
   - All categories
-  - Products by category  
+  - Products by category
+  - Cheapest shopping card  
 - [x] Czech + English internationalization  
 - [x] Static and media file support
 - [X] Custom user model (UUID-based, email as login)
@@ -120,7 +120,7 @@ Log in using your superuser credentials.
 | `/api/products-by-category/<category_id>/` | Lists products in a specific category |
 |`/api/basket/`: | POST basket data, returns total price per supermarket | 
 
-> Test them in Postman or browser while the dev server is running.
+> Test them in browser while the dev server is running.
 
 ## Important Notes
 
