@@ -1,8 +1,36 @@
 from django.contrib import admin
-from .models import Category, GenericProduct, Supermarket, ProductVariant
+from django.contrib.auth.admin import UserAdmin
+from django.utils.translation import gettext_lazy as _
 
-# This makes the models show up in the Django admin panel
+from .models.products import Category, GenericProduct, Supermarket, ProductVariant
+from .models.users import CustomUser
+
+# Standart models registered
 admin.site.register(Category)
 admin.site.register(GenericProduct)
 admin.site.register(Supermarket)
 admin.site.register(ProductVariant)
+
+
+@admin.register(CustomUser)
+class CustomUserAdmin(UserAdmin):
+    model = CustomUser
+    list_display = ('email', 'phone_number', 'is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'is_phone_verified')
+    list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'is_phone_verified')
+    ordering = ('email',)
+    search_fields = ('email', 'phone_number')
+
+    fieldsets = (
+        (None, {'fields': ('email', 'phone_number', 'password')}),
+        (_('Verification'), {'fields': ('is_email_verified', 'is_phone_verified')}),
+        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+        (_('Consents'), {'fields': ('terms_accepted_at', 'privacy_policy_accepted_at')}),
+    )
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'phone_number', 'password1', 'password2'),
+        }),
+    )
