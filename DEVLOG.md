@@ -71,7 +71,7 @@ GitHub:
 
 - Final testing, pushed all working changes to GitHub.
 
-## April 10 – Backend Progress (User Accounts, Refactors, Data Seeding)
+### 2025-04-10 - Backend Progress (User Accounts, Refactors, Data Seeding)
 
 ### Planning & Structure
 - Created `models/products.py` and `models/users.py` for better modularity.
@@ -104,6 +104,10 @@ GitHub:
 - Merged changes back into `main` after testing.
 - Removed working branch post-merge.
 - Cleaned commit history by committing only tested updates to `main`.
+
+### 2025-04-11 
+- Implemented and registered the CustomUser model in the Django admin panel.
+- Verified admin panel works correctly, showing email, phone number, and verification status.
 ---
 
 
