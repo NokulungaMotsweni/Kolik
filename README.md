@@ -7,7 +7,8 @@
 ## Project Overview
 
 - **Backend**: Django + Django REST Framework  
-- **Frontend**: HTML/CSS/JS  
+- **Frontend**: HTML/CSS/JS
+- **Database**: PostgreSQL
 - **Multilingual**: Supports Czech + English   
 
 ---
@@ -134,7 +135,7 @@ Log in using your superuser credentials.
 
 - **Agáta Langová** – Backend development  
 - **Dawid Piorkowski** – Frontend development  
-- **Nokulunga Motsweni**  
+- **Nokulunga Motsweni**  - Database Development
 - **Dren Krasniqi**  
 - **Teo Bocev**
 
