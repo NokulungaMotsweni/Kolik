@@ -1,38 +1,15 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from core.models import GenericProduct, ProductVariant
-from core.models import Category
+from core.models import GenericProduct, ProductVariant, Category
 from decimal import Decimal
+from core.services.basket_service import calculate_total_per_supermarket
+from core.serializers.product_serializers import (
+    CategorySerializer,
+    GenericProductSerializer,
+    ProductVariantSerializer
+)
 
-# View 1: Returns the cheapest product variant by product name - OPTIONAL for now second view is more accurate as it relies on ID
-@api_view(['GET'])
-def best_deal(request, product_name):
-    try:
-        product = GenericProduct.objects.get(name__iexact=product_name)
-        variants = ProductVariant.objects.filter(generic_product=product)
-
-        if not variants.exists():
-            return Response({"error": "No variants found for this product."}, status=404)
-
-        # Find the variant with the lowest price
-        best_variant = min(variants, key=lambda x: x.price)
-
-        data = {
-            "product": product.name,
-            "amount": product.amount,
-            "unit": product.unit,
-            "best_price": float(best_variant.price),
-            "supermarket": best_variant.supermarket.name,
-            "variant_name": best_variant.name,
-        }
-
-        return Response(data)
-
-    except GenericProduct.DoesNotExist:
-        return Response({"error": "Product not found."}, status=404)
-
-
-# View 2: Returns the best deal using product ID (this one is preferred)
+# View 1: Returns the cheapest variant for a given generic product (by ID)
 @api_view(['GET'])
 def best_deal_by_id(request, product_id):
     try:
@@ -43,21 +20,18 @@ def best_deal_by_id(request, product_id):
             return Response({"error": "No variants found."}, status=404)
 
         best_variant = min(variants, key=lambda x: x.price)
+        serializer = ProductVariantSerializer(best_variant, context={"request": request})
 
         return Response({
             "product": product.name,
             "amount": product.amount,
             "unit": product.unit,
-            "best_price": float(best_variant.price),
-            "supermarket": best_variant.supermarket.name,
-            "variant_name": best_variant.name,
+            "best_variant": serializer.data
         })
-
     except GenericProduct.DoesNotExist:
         return Response({"error": "Product not found."}, status=404)
 
-
-# View 3: Returns all available variants for a given product (by ID)
+# View 2: Lists all variants available for a specific generic product
 @api_view(['GET'])
 def all_variants_by_product(request, product_id):
     try:
@@ -67,144 +41,77 @@ def all_variants_by_product(request, product_id):
         if not variants.exists():
             return Response({"error": "No variants found for this product."}, status=404)
 
-        data = []
-
-        for variant in variants:
-            data.append({
-                "variant_name": variant.name,
-                "price": float(variant.price),
-                "supermarket": variant.supermarket.name,
-                "image_url": variant.image.url if variant.image else None,
-                "last_updated": variant.last_updated.strftime('%Y-%m-%d %H:%M'),
-            })
+        serializer = ProductVariantSerializer(variants, many=True, context={"request": request})
 
         return Response({
             "generic_product": product.name,
             "amount": product.amount,
             "unit": product.unit,
-            "variants": data
+            "variants": serializer.data
         })
-
     except GenericProduct.DoesNotExist:
         return Response({"error": "Product not found."}, status=404)
 
-#  View 4: List all categories (e.g. Dairy, Bakery)
+# View 3: Lists all product categories (e.g., Dairy, Bakery)
 @api_view(['GET'])
 def list_categories(request):
     categories = Category.objects.all()
-    data = [{"id": cat.id, "name": cat.name} for cat in categories]
-    return Response(data)
+    serializer = CategorySerializer(categories, many=True)
+    return Response(serializer.data)
 
-
-# View 5: List all products inside a category
+# View 4: Lists all generic products inside a specific category
 @api_view(['GET'])
 def products_by_category(request, category_id):
     try:
         category = Category.objects.get(id=category_id)
         products = GenericProduct.objects.filter(category=category)
-        data = []
-
-        for product in products:
-            data.append({
-                "id": product.id,
-                "name": product.name,
-                "amount": float(product.amount),
-                "unit": product.unit
-            })
+        serializer = GenericProductSerializer(products, many=True)
 
         return Response({
             "category": category.name,
-            "products": data
+            "products": serializer.data
         })
-
     except Category.DoesNotExist:
-        return Response({"error": "Category not found"}, status=404) 
+        return Response({"error": "Category not found"}, status=404)
 
-# View 6: All generic products are listed (for search or full display)
+# View 5: Lists all generic products (for browsing or search results)
 @api_view(['GET'])
 def list_all_products(request):
     products = GenericProduct.objects.select_related('category').all()
-    data = []
+    serializer = GenericProductSerializer(products, many=True)
+    return Response(serializer.data)
 
-    for product in products:
-        data.append({
-            "id": product.id,
-            "name": product.name,
-            "amount": float(product.amount),
-            "unit": product.unit,
-            "category": product.category.name,
-        })
-
-    return Response(data)
-
-
-
-
-
-# View 7 - Cheapest basket total across supermarkets
+# View 6: Delegates basket calculation to a service.
+# Calculates total price of a user's basket across all supermarkets
+# using the cheapest available variant per product.
 @api_view(['GET', 'POST'])
 def calculate_basket(request):
     if request.method == 'GET':
         return Response({
             "example": {
                 "basket": [
-                    {"product_id": 1, "quantity": 2},  # e.g. 2x 1L milk
-                    {"product_id": 3, "quantity": 1}   # e.g. 1x 10-egg carton
+                    {"product_id": 1, "quantity": 2},
+                    {"product_id": 3, "quantity": 1}
                 ]
             },
-            "instructions": "Send a POST request to this endpoint with JSON like the above to calculate the basket price at each supermarket."
+            "instructions": "Send a POST request to this endpoint with JSON like the above to calculate basket price."
         })
 
     basket = request.data.get("basket", [])
     if not basket:
         return Response({"error": "Basket is empty or missing."}, status=400)
 
-    supermarket_totals = {}  # e.g. { 'Tesco': 97.80, 'Albert': 102.90 }
+    results, cheapest = calculate_total_per_supermarket(basket)
 
-    # Goes through each product in basket
-    for item in basket:
-        product_id = item.get("product_id")
-        quantity = item.get("quantity", 1)  # default = 1
-
-        try:
-            product = GenericProduct.objects.get(id=product_id)
-            variants = ProductVariant.objects.filter(generic_product=product)
-
-            # Finds the cheapest variant per supermarket
-            cheapest_by_supermarket = {}
-            for variant in variants:
-                market = variant.supermarket.name
-                price = Decimal(variant.price)
-
-                # Saves the cheapest variant per supermarket
-                if market not in cheapest_by_supermarket or price < cheapest_by_supermarket[market].price:
-                    cheapest_by_supermarket[market] = variant
-
-            # Adds product cost to each supermarket's total
-            for market, variant in cheapest_by_supermarket.items():
-                price = Decimal(variant.price) * Decimal(quantity)
-
-                if market not in supermarket_totals:
-                    supermarket_totals[market] = Decimal("0.0")
-
-                supermarket_totals[market] += price
-
-        except GenericProduct.DoesNotExist:
-            return Response({"error": f"Product with ID {product_id} not found."}, status=404)
-
-    # Formats the output nicely 
-    results = [
-        {"supermarket": market, "total": round(total, 2)}
-        for market, total in supermarket_totals.items()
-    ]
-
-    # Finds the cheapest supermarket
-    if results:
-        cheapest = min(results, key=lambda x: x["total"])
-    else:
-        cheapest = None
+    if isinstance(results, dict) and "error" in results:
+        return Response(results, status=404)
 
     return Response({
         "results": results,
         "cheapest_supermarket": cheapest
     })
+
+# TODO:
+# - Add BasketSerializer to validate basket structure (product_id + quantity)
+# - Optional: Save basket for authenticated users
+# - Optional: Cache basket prices for repeated queries
