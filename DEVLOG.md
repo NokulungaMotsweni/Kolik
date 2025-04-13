@@ -113,6 +113,45 @@ GitHub:
 - Verified admin panel shows all user data cleanly (email, phone, verification status)
 - Fixed `add_fieldsets` bug to allow user creation via admin
 - Confirmed UUID login and permissions working as expected
+
+### 2025-04-13 (Agáta)
+### Refactoring & Structure
+- Modularized views:
+  - Moved all product-related logic to `product_views.py`
+  - Moved authentication logic to `auth_views.py`
+- Cleaned up imports and separated logic for better maintainability
+
+### Registration Feature
+- Created `RegisterView` using DRF’s `CreateAPIView`
+- Built `RegisterSerializer` with:
+  - Strong password validation (length, uppercase, digit, special character)
+  - Confirm password match
+  - User created as inactive by default
+- Logged user consent (terms and privacy)
+
+### Product Views Refactor
+- Replaced manual responses with serializers:
+  - `CategorySerializer`, `GenericProductSerializer`, `ProductVariantSerializer`
+- Updated views:
+  - `list_all_products`
+  - `products_by_category`
+  - `best_deal_by_id`
+  - `all_variants_by_product`
+
+### Basket Price Calculation
+- Refactored `calculate_basket` to use helper function `calculate_total_per_supermarket`
+- POST returns cheapest supermarket and totals
+- GET provides usage example
+- Added TODOs:
+  - Add BasketSerializer for input validation
+  - Optional: caching or saving basket results for logged-in users
+
+### Login Feature (Phase 1)
+- Added `LoginView` (email + password only)
+- Implemented `LoginSerializer`:
+  - Validates credentials
+  - Ensures user is active
+- Session/token logic planned in next steps
 ---
 
 
