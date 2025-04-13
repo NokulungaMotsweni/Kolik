@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from django.contrib.auth import authenticate
+from core.models.users import CustomUser
 
 User = get_user_model()
 
@@ -81,3 +83,53 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
 
         return user
+
+
+
+
+
+
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Handles user login by validating email and password credentials.
+
+    - Verifies that both fields are provided
+    - Authenticates user using Django's built-in `authenticate`
+    - Checks if the user account is active (i.e., not disabled or pending verification)
+    - If successful it attaches the authenticated user to the validated data
+    """
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get("email")
+        password = data.get("password")
+
+        # Ensure both fields are provided
+        if not email or not password:
+            raise serializers.ValidationError("Email and password are required.")
+
+        # Authenticate user using Django's auth system
+        user = authenticate(username=email, password=password)
+
+        if not user:
+            raise serializers.ValidationError("Invalid credentials.")
+
+        # Ensure the account is active (not disabled or pending verification)
+        if not user.is_active:
+            raise serializers.ValidationError("Account is inactive or not verified.")
+
+        # Attach the user to validated data for use in the view
+        data["user"] = user
+        return data
+
+
+# TODO 
+# - Add rate limiting 
+# - Log login attempts 
+# - Support session tokens
+# - Detect and block suspicious login behavior (e.g., too many logins from new IPs)
+# - Integrate 2FA 
+# - Add account lockout after multiple failed attempts (with cooldown)
+# - Optionally notify users on successful login from a new device or location        

@@ -115,3 +115,23 @@ def calculate_basket(request):
 # - Add BasketSerializer to validate basket structure (product_id + quantity)
 # - Optional: Save basket for authenticated users
 # - Optional: Cache basket prices for repeated queries
+
+# View 7: Search products by name using query parameter (?q=milk)
+@api_view(['GET'])
+def search_products(request):
+    query = request.GET.get('q', '').strip()
+
+    if not query:
+        return Response({"error": "Search query cannot be empty."}, status=400)
+
+    # Perform a case-insensitive search on the product name field
+    results = GenericProduct.objects.filter(name__icontains=query)
+
+    serializer = GenericProductSerializer(results, many=True)
+    return Response(serializer.data)
+
+
+# TODO: Security & Performance Improvements (Optional)
+# - Limit number of results returned (e.g. top 50)
+# - Add rate limiting (DRF throttle classes)
+  

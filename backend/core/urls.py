@@ -1,6 +1,8 @@
 from django.urls import path
 from core.views import product_views, auth_views
 
+
+
 urlpatterns = [
 
     # Product endpoints
@@ -10,7 +12,10 @@ urlpatterns = [
     path('products-by-category/<int:category_id>/', product_views.products_by_category),
     path('products/', product_views.list_all_products),
     path('basket/', product_views.calculate_basket),
+    path('products/search/', product_views.search_products),
 
     # Auth endpoints
     path('auth/register/', auth_views.RegisterView.as_view()),
+    path('auth/check-email/', auth_views.CheckEmailView.as_view()),
+    path('auth/login/', auth_views.LoginView.as_view()),
 ]
