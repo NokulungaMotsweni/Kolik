@@ -11,6 +11,7 @@ Set up backend from scratch:
 - Configured `settings.py` with timezone, language, static/media, and internationalization (Czech/English support)
 
 Models created:
+- Credit: Structure based on design by Nokulunga Motsweni
 - `Supermarket`: Tesco, Billa, Albert
 - `Category`: e.g., Dairy, Bakery, Vegetables..
 - `GenericProduct`: shared products like "Whole milk 1L"
@@ -79,6 +80,7 @@ GitHub:
 - Linked everything in `AUTH_USER_MODEL` as `core.CustomUser`.
 
 ### Custom User Model Setup
+- Credit: Structure based on design by Nokulunga Motsweni
 - Created `CustomUser` model with the following fields:
   - UUID primary key (`id`)
   - Unique `email` (used for login)
