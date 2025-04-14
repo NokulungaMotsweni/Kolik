@@ -113,13 +113,18 @@ Log in using your superuser credentials.
 
 ## Available API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `/api/best-deal/<product_id>/` | Returns the cheapest product variant |
-| `/api/all-variants/<product_id>/` | Lists all variants for a product |
-| `/api/categories/` | Lists all product categories |
-| `/api/products-by-category/<category_id>/` | Lists products in a specific category |
-|`/api/basket/`: | POST basket data, returns total price per supermarket | 
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET    | `/api/products/` | Lists all generic products |
+| GET    | `/api/categories/` | Lists all product categories |
+| GET    | `/api/products-by-category/<category_id>/` | Lists products in a specific category |
+| GET    | `/api/best-deal/<product_id>/` | Returns the cheapest product variant |
+| GET    | `/api/all-variants/<product_id>/` | Lists all variants for a product |
+| GET    | `/api/basket/` | Returns usage instructions for basket pricing |
+| POST   | `/api/basket/` | Calculates total basket price per supermarket |
+| GET    | `/api/search/?q=milk` | Searches products by name (case-insensitive) |
+| POST   | `/api/auth/register/` | User registration (with password validation) |
+| POST   | `/api/auth/login/` | User login (with active account check) |
 
 > Test them in browser while the dev server is running.
 
