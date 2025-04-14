@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from core.models import GenericProduct, ProductVariant, Category
 from decimal import Decimal
 from core.services.basket_service import calculate_total_per_supermarket
+from core.services.pricing import get_best_variant
 from core.serializers.product_serializers import (
     CategorySerializer,
     GenericProductSerializer,
@@ -19,7 +20,7 @@ def best_deal_by_id(request, product_id):
         if not variants.exists():
             return Response({"error": "No variants found."}, status=404)
 
-        best_variant = min(variants, key=lambda x: x.price)
+        best_variant = get_best_variant(variants)
         serializer = ProductVariantSerializer(best_variant, context={"request": request})
 
         return Response({
