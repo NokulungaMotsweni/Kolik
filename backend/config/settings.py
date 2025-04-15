@@ -110,3 +110,4 @@ TEMPLATES = [
 
 # DEFAULTS
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Default for model primary keys
+
