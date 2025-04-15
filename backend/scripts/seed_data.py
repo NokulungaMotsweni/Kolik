@@ -1,6 +1,13 @@
-from core.models import Supermarket, Category, GenericProduct, ProductVariant
+import os
+import django
+
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
+
 from django.utils.timezone import make_aware
 from datetime import datetime
+from products.models import Supermarket, Category, GenericProduct, ProductVariant
 
 # Supermarkets
 tesco = Supermarket.objects.get_or_create(name="Tesco")[0]
