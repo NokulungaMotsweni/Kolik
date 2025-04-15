@@ -1,3 +1,15 @@
+"""
+API views for the 'products' app.
+
+This module provides read-only endpoints for:
+- Viewing product categories
+- Viewing generic products and their supermarket variants
+- Comparing prices across supermarkets
+- Searching for products
+
+These views are designed for public access and do not require authentication.
+"""
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from products.models import GenericProduct, ProductVariant, Category
@@ -9,9 +21,19 @@ from products.serializers import (
 )
 
 
-# View 1: Returns the cheapest variant for a given generic product (by ID)
+# View 1: Get the best (cheapest) variant for a given generic product
+
 @api_view(['GET'])
 def best_deal_by_id(request, product_id):
+    """
+    Returns the cheapest available variant of a specific generic product.
+
+    Args:
+        product_id (int): The ID of the generic product to compare.
+
+    Returns:
+        JSON containing product info and the best (lowest price) variant.
+    """
     try:
         product = GenericProduct.objects.get(id=product_id)
         variants = ProductVariant.objects.filter(generic_product=product)
@@ -31,9 +53,20 @@ def best_deal_by_id(request, product_id):
     except GenericProduct.DoesNotExist:
         return Response({"error": "Product not found."}, status=404)
 
-# View 2: Lists all variants available for a specific generic product
+
+# View 2: List all variants for a specific generic product
+
 @api_view(['GET'])
 def all_variants_by_product(request, product_id):
+    """
+    Returns all supermarket variants for a given generic product.
+
+    Args:
+        product_id (int): The ID of the generic product.
+
+    Returns:
+        JSON with the list of all product variants available.
+    """
     try:
         product = GenericProduct.objects.get(id=product_id)
         variants = ProductVariant.objects.filter(generic_product=product)
@@ -52,16 +85,34 @@ def all_variants_by_product(request, product_id):
     except GenericProduct.DoesNotExist:
         return Response({"error": "Product not found."}, status=404)
 
-# View 3: Lists all product categories (e.g., Dairy, Bakery)
+
+# View 3: List all product categories
+
 @api_view(['GET'])
 def list_categories(request):
+    """
+    Returns a list of all available product categories.
+
+    Example: Dairy, Bakery, Vegetables, etc.
+    """
     categories = Category.objects.all()
     serializer = CategorySerializer(categories, many=True)
     return Response(serializer.data)
 
-# View 4: Lists all generic products inside a specific category
+
+# View 4: List all generic products in a category
+
 @api_view(['GET'])
 def products_by_category(request, category_id):
+    """
+    Returns all generic products that belong to a specific category.
+
+    Args:
+        category_id (int): ID of the category.
+
+    Returns:
+        JSON with the category name and products inside it.
+    """
     try:
         category = Category.objects.get(id=category_id)
         products = GenericProduct.objects.filter(category=category)
@@ -74,36 +125,43 @@ def products_by_category(request, category_id):
     except Category.DoesNotExist:
         return Response({"error": "Category not found"}, status=404)
 
-# View 5: Lists all generic products (for browsing or search results)
+
+# View 5: List all generic products
+
 @api_view(['GET'])
 def list_all_products(request):
+    """
+    Returns a list of all generic products in the system.
+
+    This is used for general browsing or showing full results.
+    """
     products = GenericProduct.objects.select_related('category').all()
     serializer = GenericProductSerializer(products, many=True)
     return Response(serializer.data)
 
 
+# View 6: Search products by name
 
-# TODO:
-# - Add BasketSerializer to validate basket structure (product_id + quantity)
-# - Optional: Save basket for authenticated users
-# - Optional: Cache basket prices for repeated queries
-
-# View 7: Search products by name using query parameter (?q=milk)
 @api_view(['GET'])
 def search_products(request):
+    """
+    Searches for generic products by name using a query parameter (?q=milk).
+
+    Returns:
+        Matching generic products (case-insensitive search).
+    """
     query = request.GET.get('q', '').strip()
 
     if not query:
         return Response({"error": "Search query cannot be empty."}, status=400)
 
-    # Perform a case-insensitive search on the product name field
     results = GenericProduct.objects.filter(name__icontains=query)
-
     serializer = GenericProductSerializer(results, many=True)
     return Response(serializer.data)
 
 
-# TODO: Security & Performance Improvements (Optional)
-# - Limit number of results returned (e.g. top 50)
-# - Add rate limiting (DRF throttle classes)
-  
+# TODOs (Future Improvements)
+# - Add BasketSerializer to validate basket structure (product_id + quantity)
+# - Save basket per user (if logged in)
+# - Cache basket results for performance
+

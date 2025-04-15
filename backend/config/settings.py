@@ -1,3 +1,14 @@
+"""
+Django settings for the Kolik backend project.
+
+This configuration file defines the core setup of the Django backend,
+including installed apps, database settings, middleware, static/media paths,
+internationalization, and REST framework integration.
+
+Sensitive values (e.g., SECRET_KEY) are stored securely in a .env file
+and loaded using python-decouple for safe development and deployment.
+"""
+
 from decouple import config  # .env file
 from pathlib import Path  # Manages file system paths
 from django.utils.translation import gettext_lazy as _  # Translation

@@ -1,0 +1,1 @@
+# Marks this folder as a Python package for Django project settings and config files

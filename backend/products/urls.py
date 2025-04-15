@@ -1,3 +1,14 @@
+"""
+URL patterns for the 'products' app.
+
+These endpoints allow users to:
+- Browse product categories
+- View all generic products
+- Search for products
+- View all variants of a product
+- Find the best deal (cheapest offer) for a specific product
+"""
+
 from django.urls import path
 from products import views  
 

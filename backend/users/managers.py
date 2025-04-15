@@ -1,7 +1,38 @@
+"""
+Custom user manager for the Kolik app.
+
+Overrides Django's default user creation logic to:
+- Use email and phone number instead of username
+- Provide custom methods for creating users and superusers
+"""
+
 from django.contrib.auth.base_user import BaseUserManager
 
+
 class CustomUserManager(BaseUserManager):
+    """
+    Custom user manager for the CustomUser model.
+
+    Handles user creation using email + phone number (no username field),
+    and ensures superusers have all required permissions.
+    """
+
     def create_user(self, email, phone_number, password=None, **extra_fields):
+        """
+        Creates and returns a regular user with the given email and phone number.
+
+        Args:
+            email (str): User's email (used as the login identifier)
+            phone_number (str): User's phone number
+            password (str): Raw password
+            extra_fields (dict): Additional fields like is_active, is_verified, etc.
+
+        Raises:
+            ValueError: If email or phone number is missing
+
+        Returns:
+            CustomUser instance
+        """
         if not email:
             raise ValueError("The Email must be set")
         if not phone_number:
@@ -14,6 +45,17 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, phone_number, password=None, **extra_fields):
+        """
+        Creates and returns a superuser (admin) with full permissions.
+
+        Sets:
+            - is_staff = True
+            - is_superuser = True
+            - is_active = True
+
+        Raises:
+            ValueError: If required superuser flags are missing
+        """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)

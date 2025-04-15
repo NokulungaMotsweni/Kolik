@@ -1,3 +1,14 @@
+"""
+API views for the 'shopping_cart' app.
+
+This module provides a single endpoint for:
+- Accepting a user's basket (list of product IDs and quantities)
+- Calculating total cost per supermarket
+- Identifying the cheapest option
+
+Accessible via both GET (instructions) and POST (calculation).
+"""
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
