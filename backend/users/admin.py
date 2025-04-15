@@ -1,16 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
-
-from .models.products import Category, GenericProduct, Supermarket, ProductVariant
-from .models.users import CustomUser
-
-# Standart models registered
-admin.site.register(Category)
-admin.site.register(GenericProduct)
-admin.site.register(Supermarket)
-admin.site.register(ProductVariant)
-
+from .models import CustomUser
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):

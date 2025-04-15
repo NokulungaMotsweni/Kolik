@@ -1,9 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from core.serializers.auth_serializers import RegisterSerializer
-from core.models.users import CustomUser
-from core.serializers.auth_serializers import LoginSerializer
+from .serializers import RegisterSerializer, LoginSerializer
+from users.models import CustomUser
 
 
 

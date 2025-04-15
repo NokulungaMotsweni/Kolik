@@ -1,5 +1,5 @@
 from decimal import Decimal
-from core.models import GenericProduct, ProductVariant
+from products.models import GenericProduct, ProductVariant
 
 def calculate_total_per_supermarket(basket):
     """
