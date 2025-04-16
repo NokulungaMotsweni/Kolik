@@ -152,6 +152,21 @@ GitHub:
   - Validates credentials
   - Ensures user is active
 - Session/token logic planned in next steps
+
+## Date: April 16, 2025  (Agáta)
+### Branches: `refactor-app-structure`, `fix-login-flow`  
+ 
+- Refactored Django backend into modular apps:
+  - `users` – registration, login, logout, and user model
+  - `products` – categories, generic products, product variants
+  - `shopping_cart` – basket calculation and supermarket comparison
+- Deleted deprecated `core` app after successful migration.
+- Moved business logic into `services.py` for better separation and scalability.
+- Replaced two-step login flow with **one-step email + password authentication**.
+- Implemented secure logout with CSRF and session handling.
+- Created `BasketSerializer` to validate shopping cart structure.
+- Fixed logout handling (only allows POST + session-based requests).
+
 ---
 
 
