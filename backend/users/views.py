@@ -3,8 +3,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import RegisterSerializer, LoginSerializer
 from users.models import CustomUser
-
-
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import logout
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 
 
 
@@ -68,3 +70,23 @@ class LoginView(APIView):
                 "email": user.email
             })
         return Response(serializer.errors, status=400)                    
+
+
+
+
+
+
+@method_decorator(csrf_protect, name='dispatch')
+class LogoutView(APIView):
+    """
+    Logs out the authenticated user by ending their session securely.
+    - Requires POST request.
+    - Requires user to be logged in.
+    - Enforces CSRF protection.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        logout(request)
+        return Response({"message": "Logged out successfully."}, status=status.HTTP_200_OK)
