@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_protect
 
 
 
+
 class RegisterView(APIView):
     """
     Handles secure user registration.
@@ -30,36 +31,13 @@ class RegisterView(APIView):
 
 
 
-class CheckEmailView(APIView):
-    """
-    Step 1: Validates if a user exists with the given email and is active.
-    """
-    def post(self, request):
-        email = request.data.get("email", "").strip().lower()
-
-        if not email:
-            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = CustomUser.objects.get(email=email)
-
-            if not user.is_active:
-                return Response({"error": "Account is inactive or unverified."}, status=403)
-
-            return Response({
-                "message": "Email is valid. Continue to password entry.",
-                "user_id": str(user.id)
-            })
-
-        except CustomUser.DoesNotExist:
-            return Response({"error": "No account found with this email."}, status=404)
-
 
 
 class LoginView(APIView):
     """
-    Step 2: Authenticates a user using email and password.
+    Authenticates a user using email and password.
     """
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
@@ -69,7 +47,7 @@ class LoginView(APIView):
                 "user_id": str(user.id),
                 "email": user.email
             })
-        return Response(serializer.errors, status=400)                    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)         
 
 
 
