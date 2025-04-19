@@ -96,15 +96,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
 
         # Create UserVerification With Dynamic Expiry
-        verifcation = UserVerification.objects.create(
+        verification = UserVerification.objects.create(
             user=user,
             verification_type=verification_type,
             expires_on=timezone.now() + verification_type.expires_on
         )
 
         # Call generate_token Function
-        raw_token = verifcation.generate_token()
-        verifcation.save()
+        raw_token = verification.generate_token()
+        verification.save()
 
         # THIS IS TEMPORARY FOR DEV/TESTING IF WE DECIDE TO KEEP THE TOKEN AND FIGURE OUT HOW TO EMAIL
         print("Verification Token: ", raw_token) # RAW TOKEN AS IT WILL GO TO THE USER
