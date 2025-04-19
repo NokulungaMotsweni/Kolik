@@ -5,8 +5,9 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-from users.models import UserVerification
+from users.models import UserVerification, VerificationType
 from datetime import timedelta
+import hashlib
 User = get_user_model()
 
 
@@ -70,8 +71,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         Creates a new user. The account is inactive by default and awaits
         phone and email verification. Consent timestamps are stored.
         """
-        validated_data.pop('confirm_password')  
+        validated_data.pop('confirm_password')
 
+        # Create Inactive User Awaiting Verification
         user = User.objects.create_user(
             email=validated_data['email'],
             phone_number=validated_data['phone_number'],
@@ -84,17 +86,27 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.privacy_policy_accepted_at = timezone.now()
         user.save()
 
-        # Creation of Verification Token
-        verification = UserVerification.objects.create(
-            user=user,
-            # Expires after 20 minutes
-            expires_at=timezone.now() + timedelta(minutes=20)
+        # Lookup or Create the VerificationType (Email for now)
+        verification_type, _ = VerificationType.objects.get_or_create(
+            name='Email',
+            defaults={
+                'requires_token': True,
+                'expires_on': timedelta(minutes=20)
+            }
         )
-        # Call generate_token Function
-        raw_token = verification.generate_token()
-        verification.save()
 
-        # THIS IS TEMPORARY IF WE DECIDE TO KEEP THE TOKEN AND FIGURE OUT HOW TO EMAIL
+        # Create UserVerification With Dynamic Expiry
+        verifcation = UserVerification.objects.create(
+            user=user,
+            verification_type=verification_type,
+            expires_on=timezone.now() + verification_type.expires_on
+        )
+
+        # Call generate_token Function
+        raw_token = verifcation.generate_token()
+        verifcation.save()
+
+        # THIS IS TEMPORARY FOR DEV/TESTING IF WE DECIDE TO KEEP THE TOKEN AND FIGURE OUT HOW TO EMAIL
         print("Verification Token: ", raw_token) # RAW TOKEN AS IT WILL GO TO THE USER
         return user
 

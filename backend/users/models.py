@@ -68,11 +68,19 @@ class UserVerification(models.Model):
         return raw_token
 
 class VerificationType(models.Model):
+    """
+    Represents the Verification Method Type.
 
+    Fields:
+    - verification_type_id (AutoField): Primary key.
+    - name (str): Type label (e.g., "Email", "Phone").
+    - requires_token (boolean): Whether the Type Uses Token-Based Verification.
+    - expires_on (timedelta): Token Validity Duration.
+    """
     verification_type_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=40)
     requires_token = models.BooleanField(default=True)
-    expires_on = models.DurationField()  # Matches INTERVAL from your schema
+    expires_on = models.DurationField()
 
     def __str__(self):
         return self.name
