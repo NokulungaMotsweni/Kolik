@@ -5,8 +5,9 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
+from users.models import UserVerification
+from datetime import timedelta
 User = get_user_model()
-
 
 
 
@@ -19,6 +20,7 @@ Handles:
 - Password strength validation (capital, number, symbol, etc.)
 - Timestamps for T&C consent
 - User marked inactive until phone/email verification is complete
+- User Verification
 """
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
@@ -82,6 +84,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.privacy_policy_accepted_at = timezone.now()
         user.save()
 
+        # Creation of Verification Token
+        verification = UserVerification.objects.create(
+            user=user,
+            # Expires after 20 minutes
+            expires_at=timezone.now() + timedelta(minutes=20)
+        )
+        # Call generate_token Function
+        raw_token = verification.generate_token()
+        verification.save()
+
+        # THIS IS TEMPORARY IF WE DECIDE TO KEEP THE TOKEN AND FIGURE OUT HOW TO EMAIL
+        print("Verification Token: ", raw_token) # RAW TOKEN AS IT WILL GO TO THE USER
         return user
 
 

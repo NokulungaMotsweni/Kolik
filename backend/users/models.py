@@ -41,6 +41,11 @@ class UserVerification(models.Model):
     This Data is Used to Verify the Identity of the User via Time-Limited Tokens.
     """
     verification_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="verifications"
+    )
     token_hash = models.CharField(max_length=64)
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(null=True, blank=True)
@@ -48,6 +53,7 @@ class UserVerification(models.Model):
     expires_at = models.DateTimeField()
     attempt_number = models.IntegerField(default=0)
     is_latest = models.BooleanField(default=True)
+    objects: models.Manager['UserVerification'] = models.Manager()
 
     def generate_token(self):
         """

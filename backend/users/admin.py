@@ -10,7 +10,7 @@ This custom admin panel:
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import CustomUser
+from .models import CustomUser, UserVerification
 
 
 @admin.register(CustomUser)
@@ -50,3 +50,17 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('email', 'phone_number', 'password1', 'password2'),
         }),
     )
+
+@admin.register(UserVerification)
+class UserVerificationAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the UserVerification Model.
+    Tracks Token Generation, Token Expiry and Verification Status.
+    """
+    list_display = (
+        'verification_id', 'token_hash', 'is_verified', 'attempt_number',
+        'is_latest', 'created_at', 'expires_at', 'verified_at'
+    )
+    list_filter = ('is_verified', 'is_latest')
+    search_fields = ('token_hash',)
+    readonly_fields = ('created_at', 'verified_at')
