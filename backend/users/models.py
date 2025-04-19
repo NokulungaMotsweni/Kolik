@@ -46,6 +46,7 @@ class UserVerification(models.Model):
         on_delete=models.CASCADE,
         related_name="verifications"
     )
+    verification_type = models.ForeignKey('VerificationType', on_delete=models.CASCADE)
     token_hash = models.CharField(max_length=64)
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(null=True, blank=True)
