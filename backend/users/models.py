@@ -1,13 +1,16 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
-from .managers import CustomUserManager 
-import uuid 
+from .managers import CustomUserManager
+import uuid
+import hashlib
+
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20, unique=True)
+    # hashed_password = models.CharField(max_length=255)
 
     # Verification flags
     is_email_verified = models.BooleanField(default=False)
@@ -30,3 +33,19 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class UserVerification(models.Model):
+    id = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
+    token_hash = models.CharField(max_length=64)
+    is_verified = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempt_number = models.IntegerField(default=0)
+    is_latest = models.BooleanField(default=True)
+
+    def generate_token(self):
+        raw_token = str(uuid.uuid4())
+        self.token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        return raw_token
