@@ -67,6 +67,7 @@ class UserVerification(models.Model):
         return raw_token
 
 class VerificationType(models.Model):
+
     verification_type_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=40)
     requires_token = models.BooleanField(default=True)
