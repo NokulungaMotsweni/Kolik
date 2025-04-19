@@ -190,3 +190,13 @@ GitHub:
   * Expiry config per type (via `DurationField`)
   * `requires_token` flag
 
+## Date: 20th April 2025 (Noki)
+## Branch(es): Noki-User-1
+### Integrated **VerificationType** into **RegistrationFlow**
+* `RegistrationSerializer.create()` updated to;
+  * Lookup or create a **VerificationType** instance (Email).
+    * Temporarily a get_or_create for Dev and Testing purposes, once in production should probably switch to `.get()`.
+    * `expires_on` value is used to calculate `expires_at` dynamically.
+    * Hardcoded `timedelta(minutes=20)` value is eliminated.
+* This makes the system easily expandable (e.g., phone vs email with different expiry times).
+* 
