@@ -40,7 +40,7 @@ class UserVerification(models.Model):
     Stores User Verification Data.
     This Data is Used to Verify the Identity of the User via Time-Limited Tokens.
     """
-    id = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
+    verification_id = models.AutoField(primary_key=True)
     token_hash = models.CharField(max_length=64)
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(null=True, blank=True)
@@ -59,3 +59,12 @@ class UserVerification(models.Model):
         raw_token = str(uuid.uuid4())
         self.token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
         return raw_token
+
+class VerificationType(models.Model):
+    verification_type_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=40)
+    requires_token = models.BooleanField(default=True)
+    expires_on = models.DurationField()  # Matches INTERVAL from your schema
+
+    def __str__(self):
+        return self.name
