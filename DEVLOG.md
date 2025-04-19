@@ -169,4 +169,24 @@ GitHub:
 
 ---
 
+## Date: April 19th, 2025 (Noki)
+## Branches: Noki-User-1
+### User Verification Flow
+
+* **UserVerification** Model Created:
+  * Token Hashing, Expiry (`expires_at`), attempt_tracking and Single use control.
+  * The token is stored has, the raw token is generated and sent separately. 
+    * This is currently just printed out, email API needs to most likely get integrated here.
+  * Token integrated into **RegisterSerializer.Create()**
+    * Expiration set to 20 Minutes (Team discussion needed to finalise duration).
+    * Token printed (will be replaced by email later)
+* Added **VerifyUserView** for the validation of tokens and active users.
+  * When token is valid, `is_email_verified` + `is_active` is updated.
+  * Full safety checks included (duplicate, expired, already-used)
+
+### VerificationType
+* Created **VerificationType** model with:
+  * Custom 'verification_type_id' PK
+  * Expiry config per type (via `DurationField`)
+  * `requires_token` flag
 
