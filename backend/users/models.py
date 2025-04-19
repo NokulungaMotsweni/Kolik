@@ -34,8 +34,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
-
+# Model to Manage User Verification token and Tracking Their Status
 class UserVerification(models.Model):
+    """
+    Stores User Verification Data.
+    This Data is Used to Verify the Identity of the User via Time-Limited Tokens.
+    """
     id = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
     token_hash = models.CharField(max_length=64)
     is_verified = models.BooleanField(default=False)
@@ -46,6 +50,12 @@ class UserVerification(models.Model):
     is_latest = models.BooleanField(default=True)
 
     def generate_token(self):
+        """
+        Generates a New Unhashed Token and Stores the SHA256 Hash of the Token.
+
+        Returns:
+            str: The unhashed SHA256 Hash of the Token is Sent to The User.
+        """
         raw_token = str(uuid.uuid4())
         self.token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
         return raw_token
