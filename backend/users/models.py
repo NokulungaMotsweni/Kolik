@@ -12,6 +12,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=20, unique=True)
     # hashed_password = models.CharField(max_length=255)
 
+    # Optional (future): blocked_until = models.DateTimeField(null=True, blank=True)
+    is_blocked = models.BooleanField(default=False)
+
     # Verification flags
     is_email_verified = models.BooleanField(default=False)
     is_phone_verified = models.BooleanField(default=False)
