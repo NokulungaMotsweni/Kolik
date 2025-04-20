@@ -67,6 +67,7 @@ class UserVerification(models.Model):
         self.token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
         return raw_token
 
+# Model to Represent the Verification Method Type, Whether it Requires a Token and the Duration of the Token
 class VerificationType(models.Model):
     """
     Represents the Verification Method Type.
@@ -84,3 +85,26 @@ class VerificationType(models.Model):
 
     def __str__(self):
         return self.name
+
+class LoginAttempts(models.Model):
+    """
+    Logs Each Login Attempt.
+
+    Fields:
+    - email_entered: What The User Typed As Their Email
+    - success: Whether The Login was Successful
+    - failure_reason: If Applicable, Description of Why it Failed
+    - ip_address: IP Address of Login Attempt.
+    - device: Optional Info: User-Agent or Device Name
+    - timestamp: Auto-Filled with The Current Time
+    """
+    email_entered = models.CharField(max_length=50)
+    success = models.BooleanField()
+    failure_reason = models.TextField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField()
+    device = models.TextField(max_length=45, null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
+
