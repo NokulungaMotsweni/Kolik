@@ -5,10 +5,10 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-from users.models import UserVerification, VerificationType
 from datetime import timedelta
 import hashlib
 User = get_user_model()
+from users.models import UserVerification, VerificationType, LoginAttempts
 
 
 
@@ -132,24 +132,57 @@ class LoginSerializer(serializers.Serializer):
         email = data.get("email")
         password = data.get("password")
 
-        # Ensure both fields are provided
+        # Get IP and device (optional, improve later)
+        ip = self.context['request'].META.get('REMOTE_ADDR')
+        device = self.context['request'].META.get('HTTP_USER_AGENT', 'Unknown')
+
+        # Login Attempt Case 1: Missing credentials
         if not email or not password:
-            raise serializers.ValidationError("Email and password are required.")
+            LoginAttempts.objects.create(
+                email_entered=email or "",
+                success=False,
+                failure_reason="Missing Email or Password",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Email and Password are Required.")
 
         # Authenticate user using Django's auth system
         user = authenticate(username=email, password=password)
 
+        # Login Attempt Case 2: Invalid Credentials
         if not user:
-            raise serializers.ValidationError("Invalid credentials.")
+            LoginAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason="Invalid Credentials",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Invalid Credentials.")
 
-        # Ensure the account is active (not disabled or pending verification)
+        # Login Attempt Case 3: Account Inactive
         if not user.is_active:
-            raise serializers.ValidationError("Account is inactive or not verified.")
+            LoginAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason="Account Inactive or Not Verified",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Account is Inactive or Not Verified.")
+
+        # Login Attempt Case 4: Success
+        LoginAttempts.objects.create(
+            email_entered=email,
+            success=True,
+            ip_address=ip,
+            device=device
+        )
 
         # Attach the user to validated data for use in the view
         data["user"] = user
         return data
-
 
 # TODO 
 # - Add rate limiting 
