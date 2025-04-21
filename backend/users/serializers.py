@@ -6,7 +6,6 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from datetime import timedelta
-import hashlib
 User = get_user_model()
 from users.models import UserVerification, VerificationType, LoginAttempts
 
@@ -200,24 +199,6 @@ class LoginSerializer(serializers.Serializer):
         data["user"] = user
         return data
 
-    def get_login_failure_reason(errors):
-        if not errors:
-            return LoginFailureReason.UNKNOWN
-
-        if "non_field_errors" in errors:
-            message = errors["non_field_errors"][0].lower()
-            if "unable to log in" in message:
-                return LoginFailureReason.INVALID_CREDENTIALS
-            if "inactive" in message:
-                return LoginFailureReason.INACTIVE_ACCOUNT
-
-        if "email" in errors:
-            return LoginFailureReason.MISSING_EMAIL
-
-        if "password" in errors:
-            return LoginFailureReason.MISSING_PASSWORD
-
-        return LoginFailureReason.UNKNOWN
 
 # TODO 
 # - Add rate limiting 

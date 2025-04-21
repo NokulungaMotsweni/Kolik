@@ -4,6 +4,8 @@ from django.utils import timezone
 from .managers import CustomUserManager
 import uuid
 import hashlib
+from django.contrib.auth import get_user_model
+from .enums import AuditStatus, AuditAction
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -81,6 +83,7 @@ class VerificationType(models.Model):
     - requires_token (boolean): Whether the Type Uses Token-Based Verification.
     - expires_on (timedelta): Token Validity Duration.
     """
+    objects: models.Manager['UserVerification'] = models.Manager()  # Explicitly to Makes PyCharm Happy
     verification_type_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=40)
     requires_token = models.BooleanField(default=True)
@@ -101,6 +104,8 @@ class LoginAttempts(models.Model):
     - device: Optional Info: User-Agent or Device Name
     - timestamp: Auto-Filled with The Current Time
     """
+    objects = models.Manager() # Explicitly defined for PyCharm code completion
+    user = models.ForeignKey(get_user_model(), null=True, on_delete=models.SET_NULL)
     email_entered = models.CharField(max_length=50)
     success = models.BooleanField()
     failure_reason = models.TextField(null=True, blank=True)
@@ -111,3 +116,16 @@ class LoginAttempts(models.Model):
     def __str__(self):
         return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
 
+class AuditLog(models.Model):
+    objects = models.Manager()
+    log_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(get_user_model(), null=True, blank=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=100, choices=AuditAction.choices) # e.g login_attempt, email_verified
+    path = models.TextField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=AuditStatus.choices) # SUCCESS / FAILED
+    device = models.CharField(max_length=100, null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.action} - {self.status} at {self.timestamp}"

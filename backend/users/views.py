@@ -9,9 +9,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
 import hashlib
-
-
-
+from utils.audit import log_login, log_action, get_login_failure_reason
 
 
 
@@ -50,7 +48,6 @@ class LoginView(APIView):
 
             # Log Successful Login
             log_login(request, email=email, success=True, user=user)
-
             return Response({
                 "message": "Login successful.",
                 "user_id": str(user.id),
@@ -77,6 +74,9 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        user = request.user
+        # Adding the Log for Successful LogOut
+        log_action(request, action="logout", status="SUCCESS", user=user)
         logout(request)
         return Response({"message": "Logged out successfully."}, status=status.HTTP_200_OK)
 
@@ -91,9 +91,7 @@ class VerifyUserView(APIView):
             log_action(request, action="email_verification", status="FAILED")
             return Response({"message": "Token is required."}, status=400)
 
-
         token_hash = hashlib.sha256(token.encode()).hexdigest()
-
 
         try:
             verification = UserVerification.objects.get(token_hash=token_hash, is_latest = True)
