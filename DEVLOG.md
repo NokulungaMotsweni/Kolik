@@ -169,8 +169,8 @@ GitHub:
 
 ---
 
-## Date: April 19th, 2025 (Noki)
-## Branches: Noki-User-1
+## Date: 19th April 2025 (Noki)
+## Branch(es): Noki-User-1
 ### User Verification Flow
 
 * **UserVerification** Model Created:
