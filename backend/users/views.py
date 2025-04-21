@@ -57,6 +57,8 @@ class LoginView(APIView):
                 "email": user.email
             })
 
+        # Get the Failure Reason
+        failure_reason = get_login_failure_reason(serializer.errors)
         # Log Failed Login Attempt
         log_login(request, email=email, success=False, failure_reason=str(serializer.errors))
 
