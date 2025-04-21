@@ -60,7 +60,7 @@ class LoginView(APIView):
         # Get the Failure Reason
         failure_reason = get_login_failure_reason(serializer.errors)
         # Log Failed Login Attempt
-        log_login(request, email=email, success=False, failure_reason=str(serializer.errors))
+        log_login(request, email=email, success=False, failure_reason=failure_reason)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)         
 
