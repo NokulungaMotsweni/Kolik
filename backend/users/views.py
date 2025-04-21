@@ -43,6 +43,7 @@ class LoginView(APIView):
     """
 
     def post(self, request):
+        email = request.data.get('email') # Used for Logging Even if it is Fails
         serializer = LoginSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.validated_data["user"]
