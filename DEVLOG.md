@@ -169,4 +169,139 @@ GitHub:
 
 ---
 
+## Date: 19th April 2025 (Noki)
+## Branch(es): Noki-User-1
+### User Verification Flow
 
+* **UserVerification** Model Created:
+  * Token Hashing, Expiry (`expires_at`), attempt_tracking and Single use control.
+  * The token is stored has, the raw token is generated and sent separately. 
+    * This is currently just printed out, email API needs to most likely get integrated here.
+  * Token integrated into **RegisterSerializer.Create()**
+    * Expiration set to 20 Minutes (Team discussion needed to finalise duration).
+    * Token printed (will be replaced by email later)
+* Added **VerifyUserView** for the validation of tokens and active users.
+  * When token is valid, `is_email_verified` + `is_active` is updated.
+  * Full safety checks included (duplicate, expired, already-used)
+
+### VerificationType
+* Created **VerificationType** model with:
+  * Custom 'verification_type_id' PK
+  * Expiry config per type (via `DurationField`)
+  * `requires_token` flag
+
+## Date: 20th April 2025 (Noki)
+## Branch(es): Noki-User-1
+### Integrated **VerificationType** into **RegistrationFlow**
+* `RegistrationSerializer.create()` updated to;
+  * Lookup or create a **VerificationType** instance (Email).
+    * Temporarily a get_or_create for Dev and Testing purposes, once in production should probably switch to `.get()`.
+    * `expires_on` value is used to calculate `expires_at` dynamically.
+    * Hardcoded `timedelta(minutes=20)` value is eliminated.
+* This makes the system easily expandable (e.g., phone vs email with different expiry times).
+
+### Add **LoginAttempt** Model for Tracking Login Activity
+Introduced a new model called LoginAttempt to log and audit all user login attempts, successful or failed.
+#### Details:
+* Created **LoginAttempt** in users/models.py to store metadata about each login try.
+* Captures:
+    * email_entered: The email input provided by the user.
+    * success: Boolean indicating whether the login was successful.
+    * failure_reason: Descriptive reason for failure (e.g., invalid credentials, inactive account).
+    * ip_address: IP address of the request.
+    * device: Device/User-Agent string.
+    * timestamp: When the attempt occurred (this is autofilled).
+* Helps with:
+    * Security auditing
+    * Suspicious login detection
+    * Future rate limiting or lockout features (as per the TODO list)
+
+### Title: Capture Attempts in LoginSerializer Enhanced the Login Process to Track All User Login Attempts Directly Within the LoginSerializer.
+#### Details:
+* Inside `LoginSerializer.validate()`, we now capture each login attempt and store metadata including:
+    * Entered email.
+    * Whether the attempt was successful (boolean value so true or false)
+    * Failure reason (missing credentials/invalid credentials/inactive account) (logic to be added in enum.py to store better reasons in the DB).
+    * IP address.
+    * Device/User-Agent. (Still to decide which info we want to extract and save for this).
+* The request context is passed into the serializer from **LoginView**, allowing access to request headers for logging.
+* This improves visibility into authentication activity and lays the foundation for features like suspicious login detection and rate-limiting.
+#### Files Updated:
+* serializers.py
+* views.py (LoginView)
+
+### Title: Implement Audit Logging & Login Attempt Tracking
+Added a centralized logging system to capture the user actions and detailed login attempts for an improved authentication visibility and auditing.
+#### Details:
+* Added two models:
+    * *AuditLog* — logs all of the general user actions like login, logout and verification (has room for expansion if needed).
+    * *LoginAttempts* — tracks login-specific data including:
+        * Entered email (whether it is an active user or not).
+        * Success status (boolean).
+        * Failure reason (normalized using enums.py).
+        * IP address.
+        * Device/User-Agent.
+* Introduced `log_login()` to log both *LoginAttempts* and a general audit record in one call.
+* Created `log_action()` for an all-purpose audit logging across the board.
+* Added enums (**AuditAction**, **AuditStatus**, **LoginFailureReason**) to maintain consistent action names and failure reason codes.
+* Updated the **LoginView**, and **VerifyUserView** to use the new logging functions.
+Files Updated:
+* models.py
+* enums.py
+* utils/audit.py
+* views.py (LoginView, LogoutView, VerifyUserView)
+
+
+Devlog 21.4
+## Date: 21st April 2025 (Noki)
+## Branch(es): Noki-Users-1
+### Improve Django Admin Configuration for User Management & Auditing
+
+
+#### UserVerificationAdmin Cleanup
+* Enhanced docstring for consistency and clarity.
+
+#### LoginAttemptsAdmin Fixes
+* Fixed unresolved references caused by mismatched field names in `list_display` and `search_fields`.
+    * Verified model fields exist and adjusted search logic accordingly.
+    * Used `user__email` only if user is a ForeignKey.
+* Added `date_hierarchy = 'timestamp’` for better navigation.
+* Bettered `search_fields` and filters for better audit and review capabilities.
+
+
+### Add **Logout Logging** via **AuditLog** for Enhanced Traceability
+Logging of user logout activity to the **AuditLog** model for better traceability and security auditing.
+
+#### Details:
+* Updated the **LogoutView** in **views.py** to capture and log each logout action.
+* On successful logout:
+    * Calls log_action() with "logout" as the action.
+    * Logs status as "SUCCESS".
+* On failure:
+    * Haven’t implemented.
+* Captured metadata includes:
+    * Authenticated user (if any).
+    * IP address (with fallback to REMOTE_ADDR).
+    * Device/User-Agent string.
+    * Path of the logout request.
+    * Timestamp (auto-filled by the model).
+* This helps with:
+    * Tracking user session ends.
+    * Investigating unauthorized or suspicious logout behavior.
+    * Creating a full login/logout activity trail per user.
+
+### Enhance **AuditLog** to Store IP Address
+Extended the **AuditLog** model to include IP address information for more accurate request context.
+Details:
+* Added a new field:`ip_address = models.GenericIPAddressField(null=True, blank=True)` in **AuditLog**.
+* Ensure IP is captured in:
+    * Login attempts
+    * Email verifications
+    * Logout events
+    * Any future action using log_action
+* Helps with:
+    * Audit trail accuracy
+Files Updated:
+* models.py (AuditLog model)
+* utils/audit.py (log_action() )
+* views.py (LogoutView updated)

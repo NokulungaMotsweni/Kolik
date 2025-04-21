@@ -5,8 +5,9 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
+from datetime import timedelta
 User = get_user_model()
-
+from users.models import UserVerification, VerificationType, LoginAttempts
 
 
 
@@ -19,6 +20,7 @@ Handles:
 - Password strength validation (capital, number, symbol, etc.)
 - Timestamps for T&C consent
 - User marked inactive until phone/email verification is complete
+- User Verification
 """
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
@@ -68,8 +70,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         Creates a new user. The account is inactive by default and awaits
         phone and email verification. Consent timestamps are stored.
         """
-        validated_data.pop('confirm_password')  
+        validated_data.pop('confirm_password')
 
+        # Create Inactive User Awaiting Verification
         user = User.objects.create_user(
             email=validated_data['email'],
             phone_number=validated_data['phone_number'],
@@ -82,6 +85,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.privacy_policy_accepted_at = timezone.now()
         user.save()
 
+        # Lookup or Create the VerificationType (Email for now)
+        verification_type, _ = VerificationType.objects.get_or_create(
+            name='Email',
+            defaults={
+                'requires_token': True,
+                'expires_on': timedelta(minutes=20)
+            }
+        )
+
+        # Create UserVerification With Dynamic Expiry
+        verification = UserVerification.objects.create(
+            user=user,
+            verification_type=verification_type,
+            expires_on=timezone.now() + verification_type.expires_on
+        )
+
+        # Call generate_token Function
+        raw_token = verification.generate_token()
+        verification.save()
+
+        # THIS IS TEMPORARY FOR DEV/TESTING IF WE DECIDE TO KEEP THE TOKEN AND FIGURE OUT HOW TO EMAIL
+        print("Verification Token: ", raw_token) # RAW TOKEN AS IT WILL GO TO THE USER
         return user
 
 
@@ -106,19 +131,69 @@ class LoginSerializer(serializers.Serializer):
         email = data.get("email")
         password = data.get("password")
 
-        # Ensure both fields are provided
-        if not email or not password:
-            raise serializers.ValidationError("Email and password are required.")
+        # Get IP and device (optional, improve later)
+        ip = self.context['request'].META.get('REMOTE_ADDR')
+        device = self.context['request'].META.get('HTTP_USER_AGENT', 'Unknown')
 
+        # Login Attempt Case 1: Missing credentials
+        if not email or not password:
+            LoginAttempts.objects.create(
+                email_entered=email or "",
+                success=False,
+                failure_reason="Missing Email or Password",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Email and Password are Required.")
+
+        # Brute-Force Attack Protection: Check For Recent Failures
+        recent_fails = LoginAttempts.objects.filter(
+            email_entered=email,
+            success=False,
+            timestamp__gte=timezone.now() - timedelta(minutes=10)
+        ).count()
+
+        if recent_fails >= 5:
+            LoginAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason="Too many failed attempts",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Too many failed login attempts. Try again later.")
         # Authenticate user using Django's auth system
         user = authenticate(username=email, password=password)
 
+        # Login Attempt Case 2: Invalid Credentials
         if not user:
-            raise serializers.ValidationError("Invalid credentials.")
+            LoginAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason="Invalid Credentials",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Invalid Credentials.")
 
-        # Ensure the account is active (not disabled or pending verification)
+        # Login Attempt Case 3: Account Inactive
         if not user.is_active:
-            raise serializers.ValidationError("Account is inactive or not verified.")
+            LoginAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason="Account Inactive or Not Verified",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Account is Inactive or Not Verified.")
+
+        # Login Attempt Case 4: Success
+        LoginAttempts.objects.create(
+            email_entered=email,
+            success=True,
+            ip_address=ip,
+            device=device
+        )
 
         # Attach the user to validated data for use in the view
         data["user"] = user
