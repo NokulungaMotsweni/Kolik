@@ -39,6 +39,7 @@ class RegisterView(APIView):
 class LoginView(APIView):
     """
     Authenticates a user using email and password.
+    Logs success and failure attempts.
     """
 
     def post(self, request):
