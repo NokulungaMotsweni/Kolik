@@ -250,3 +250,58 @@ Files Updated:
 * enums.py
 * utils/audit.py
 * views.py (LoginView, LogoutView, VerifyUserView)
+
+
+Devlog 21.4
+## Date: 21st April 2025 (Noki)
+## Branch(es): Noki-Users-1
+### Improve Django Admin Configuration for User Management & Auditing
+
+
+#### UserVerificationAdmin Cleanup
+* Enhanced docstring for consistency and clarity.
+
+#### LoginAttemptsAdmin Fixes
+* Fixed unresolved references caused by mismatched field names in `list_display` and `search_fields`.
+    * Verified model fields exist and adjusted search logic accordingly.
+    * Used `user__email` only if user is a ForeignKey.
+* Added `date_hierarchy = 'timestamp’` for better navigation.
+* Bettered `search_fields` and filters for better audit and review capabilities.
+
+
+### Add **Logout Logging** via **AuditLog** for Enhanced Traceability
+Logging of user logout activity to the **AuditLog** model for better traceability and security auditing.
+
+#### Details:
+* Updated the **LogoutView** in **views.py** to capture and log each logout action.
+* On successful logout:
+    * Calls log_action() with "logout" as the action.
+    * Logs status as "SUCCESS".
+* On failure:
+    * Haven’t implemented.
+* Captured metadata includes:
+    * Authenticated user (if any).
+    * IP address (with fallback to REMOTE_ADDR).
+    * Device/User-Agent string.
+    * Path of the logout request.
+    * Timestamp (auto-filled by the model).
+* This helps with:
+    * Tracking user session ends.
+    * Investigating unauthorized or suspicious logout behavior.
+    * Creating a full login/logout activity trail per user.
+
+### Enhance **AuditLog** to Store IP Address
+Extended the **AuditLog** model to include IP address information for more accurate request context.
+Details:
+* Added a new field:`ip_address = models.GenericIPAddressField(null=True, blank=True)` in **AuditLog**.
+* Ensure IP is captured in:
+    * Login attempts
+    * Email verifications
+    * Logout events
+    * Any future action using log_action
+* Helps with:
+    * Audit trail accuracy
+Files Updated:
+* models.py (AuditLog model)
+* utils/audit.py (log_action() )
+* views.py (LogoutView updated)
