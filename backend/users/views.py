@@ -47,6 +47,10 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.validated_data["user"]
+
+            # Log Successful Login
+            log_login(request, email=email, success=True, user=user)
+
             return Response({
                 "message": "Login successful.",
                 "user_id": str(user.id),
