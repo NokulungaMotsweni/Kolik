@@ -96,7 +96,8 @@ class VerifyUserView(APIView):
         try:
             verification = UserVerification.objects.get(token_hash=token_hash, is_latest = True)
         except UserVerification.DoesNotExist:
-            return Response({"message": "Token is Invlaid or Expired."}, status=400)
+            log_action(request, action="email_verification", status="FAILED")
+            return Response({"message": "Token is Invalid or Expired."}, status=400)
 
         if verification.is_verified:
             return Response({"message": "Already Verified"}, status=200)
