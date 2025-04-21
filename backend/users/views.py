@@ -100,6 +100,7 @@ class VerifyUserView(APIView):
             return Response({"message": "Token is Invalid or Expired."}, status=400)
 
         if verification.is_verified:
+            log_action(request, action="email_verification", status="FAILED")
             return Response({"message": "Already Verified"}, status=200)
 
         if verification.expires_at < timezone.now():
