@@ -86,6 +86,7 @@ class VerifyUserView(APIView):
     def post(self, request):
         token = request.data.get('token')
         if not token:
+            log_action(request, action="email_verification", status="FAILED")
             return Response({"message": "Token is required."}, status=400)
 
 
