@@ -56,6 +56,10 @@ class LoginView(APIView):
                 "user_id": str(user.id),
                 "email": user.email
             })
+
+        # Log Failed Login Attempt
+        log_login(request, email=email, success=False, failure_reason=str(serializer.errors))
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)         
 
 
