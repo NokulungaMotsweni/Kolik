@@ -64,3 +64,33 @@ class UserVerificationAdmin(admin.ModelAdmin):
     list_filter = ('is_verified', 'is_latest')
     search_fields = ('token_hash',)
     readonly_fields = ('created_at', 'verified_at')
+
+@admin.register(LoginAttempts)
+class LoginAttemptsAdmin(admin.ModelAdmin):
+    """
+    Admin Configuration for the LoginAttempts Model.
+    Provides Visibility into All the Login Attempts For Audit/Security Review.
+    """
+    list_display = (
+        'timestamp', 'email_entered', 'success', 'failure_reason',
+        'user', 'ip_address', 'device'
+    )
+    list_filter = ('success', 'timestamp')
+    search_fields = ('email_entered', 'failure_reason', 'ip_address', 'user__email')
+    readonly_fields = ('timestamp',)
+    date_hierarchy = 'timestamp'
+
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for AuditLog model.
+    Tracks all user actions and system events.
+    """
+    list_display = (
+        'timestamp', 'action', 'status', 'user', 'path', 'device'
+    )
+    list_filter = ('action', 'status', 'timestamp')
+    search_fields = ('user__email', 'action', 'path', 'device')
+    readonly_fields = ('timestamp',)
+    date_hierarchy = 'timestamp'
