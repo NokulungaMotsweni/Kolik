@@ -118,4 +118,6 @@ class VerifyUserView(APIView):
         user.is_active = user.is_email_verified and user.is_phone_verified
         user.save()
 
+        # Log Successful Verification
+        log_action(request, action="email_verification", status="SUCCESS", user=user)
         return Response({"message": "Verification successful!"})
