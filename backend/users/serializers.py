@@ -147,6 +147,22 @@ class LoginSerializer(serializers.Serializer):
             )
             raise serializers.ValidationError("Email and Password are Required.")
 
+        # Brute-Force Attack Protection: Check For Recent Failures
+        recent_fails = LoginAttempts.objects.filter(
+            email_entered=email,
+            success=False,
+            timestamp__gte=timezone.now() - timedelta(minutes=10)
+        ).count()
+
+        if recent_fails >= 5:
+            LoginAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason="Too many failed attempts",
+                ip_address=ip,
+                device=device
+            )
+            raise serializers.ValidationError("Too many failed login attempts. Try again later.")
         # Authenticate user using Django's auth system
         user = authenticate(username=email, password=password)
 
@@ -183,6 +199,25 @@ class LoginSerializer(serializers.Serializer):
         # Attach the user to validated data for use in the view
         data["user"] = user
         return data
+
+    def get_login_failure_reason(errors):
+        if not errors:
+            return LoginFailureReason.UNKNOWN
+
+        if "non_field_errors" in errors:
+            message = errors["non_field_errors"][0].lower()
+            if "unable to log in" in message:
+                return LoginFailureReason.INVALID_CREDENTIALS
+            if "inactive" in message:
+                return LoginFailureReason.INACTIVE_ACCOUNT
+
+        if "email" in errors:
+            return LoginFailureReason.MISSING_EMAIL
+
+        if "password" in errors:
+            return LoginFailureReason.MISSING_PASSWORD
+
+        return LoginFailureReason.UNKNOWN
 
 # TODO 
 # - Add rate limiting 
