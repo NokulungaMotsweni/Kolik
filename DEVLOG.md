@@ -199,4 +199,54 @@ GitHub:
     * `expires_on` value is used to calculate `expires_at` dynamically.
     * Hardcoded `timedelta(minutes=20)` value is eliminated.
 * This makes the system easily expandable (e.g., phone vs email with different expiry times).
-* 
+
+### Add **LoginAttempt** Model for Tracking Login Activity
+Introduced a new model called LoginAttempt to log and audit all user login attempts, successful or failed.
+#### Details:
+* Created **LoginAttempt** in users/models.py to store metadata about each login try.
+* Captures:
+    * email_entered: The email input provided by the user.
+    * success: Boolean indicating whether the login was successful.
+    * failure_reason: Descriptive reason for failure (e.g., invalid credentials, inactive account).
+    * ip_address: IP address of the request.
+    * device: Device/User-Agent string.
+    * timestamp: When the attempt occurred (this is autofilled).
+* Helps with:
+    * Security auditing
+    * Suspicious login detection
+    * Future rate limiting or lockout features (as per the TODO list)
+
+### Title: Capture Attempts in LoginSerializer Enhanced the Login Process to Track All User Login Attempts Directly Within the LoginSerializer.
+#### Details:
+* Inside `LoginSerializer.validate()`, we now capture each login attempt and store metadata including:
+    * Entered email.
+    * Whether the attempt was successful (boolean value so true or false)
+    * Failure reason (missing credentials/invalid credentials/inactive account) (logic to be added in enum.py to store better reasons in the DB).
+    * IP address.
+    * Device/User-Agent. (Still to decide which info we want to extract and save for this).
+* The request context is passed into the serializer from **LoginView**, allowing access to request headers for logging.
+* This improves visibility into authentication activity and lays the foundation for features like suspicious login detection and rate-limiting.
+#### Files Updated:
+* serializers.py
+* views.py (LoginView)
+
+### Title: Implement Audit Logging & Login Attempt Tracking
+Added a centralized logging system to capture the user actions and detailed login attempts for an improved authentication visibility and auditing.
+#### Details:
+* Added two models:
+    * *AuditLog* — logs all of the general user actions like login, logout and verification (has room for expansion if needed).
+    * *LoginAttempts* — tracks login-specific data including:
+        * Entered email (whether it is an active user or not).
+        * Success status (boolean).
+        * Failure reason (normalized using enums.py).
+        * IP address.
+        * Device/User-Agent.
+* Introduced `log_login()` to log both *LoginAttempts* and a general audit record in one call.
+* Created `log_action()` for an all-purpose audit logging across the board.
+* Added enums (**AuditAction**, **AuditStatus**, **LoginFailureReason**) to maintain consistent action names and failure reason codes.
+* Updated the **LoginView**, and **VerifyUserView** to use the new logging functions.
+Files Updated:
+* models.py
+* enums.py
+* utils/audit.py
+* views.py (LoginView, LogoutView, VerifyUserView)
