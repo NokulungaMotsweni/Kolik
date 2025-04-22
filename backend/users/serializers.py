@@ -98,7 +98,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         verification = UserVerification.objects.create(
             user=user,
             verification_type=verification_type,
-            expires_on=timezone.now() + verification_type.expires_on
+            expires_at=timezone.now() + verification_type.expires_on
         )
 
         # Call generate_token Function
