@@ -1,2 +1,36 @@
+# macOS
+.DS_Store
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+env/
 venv/
-backend/db.sqlite3
+ENV/
+
+# SQLite DB
+*.sqlite3
+db.sqlite3
+
+# Logs
+*.log
+
+# Django Migrations (optional cleanup)
+**/migrations/*.pyc
+**/migrations/__pycache__/
+!**/migrations/__init__.py
+
+# JetBrains IDEs (e.g., PyCharm)
+.idea/
+
+# VSCode
+.vscode/
+
+# Clojure / LSP tooling (if you use it)
+.clj-kondo/
+.lsp/
+
+# Environment and secrets
+.env
