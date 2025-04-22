@@ -10,6 +10,11 @@ from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
 import hashlib
 from utils.audit import log_login, log_action, get_login_failure_reason
+import pyotp
+import qrcode
+import base64
+from io import BytesIO
+from django.contrib.auth import login
 
 
 
@@ -37,29 +42,38 @@ class RegisterView(APIView):
 class LoginView(APIView):
     """
     Authenticates a user using email and password.
-    Logs success and failure attempts.
+    Enforces MFA setup if not enabled. If MFA is enabled, waits for MFA code.
     """
 
     def post(self, request):
-        email = request.data.get('email') # Used for Logging Even if it is Fails
+        email = request.data.get('email')  # Used for logging even on failure
         serializer = LoginSerializer(data=request.data, context={"request": request})
+
         if serializer.is_valid():
             user = serializer.validated_data["user"]
 
-            # Log Successful Login
+            #  MFA is not set up yet → force setup
+            if not user.mfa_secret or not user.mfa_enabled:
+                log_login(request, email=email, success=False, failure_reason="MFA setup required")
+                return Response({
+                    "mfa_setup_required": True,
+                    "message": "MFA setup is required. Scan QR and verify your 6-digit code.",
+                    "user_id": str(user.id),
+                    "email": user.email
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            #  MFA is enabled → go to second step (mfa-login)
             log_login(request, email=email, success=True, user=user)
             return Response({
-                "message": "Login successful.",
+                "mfa_required": True,
                 "user_id": str(user.id),
                 "email": user.email
-            })
+            }, status=status.HTTP_200_OK)
 
-        # Get the Failure Reason
+        #  Login failed → log and return error
         failure_reason = get_login_failure_reason(serializer.errors)
-        # Log Failed Login Attempt
         log_login(request, email=email, success=False, failure_reason=failure_reason)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)         
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
 
 
 @method_decorator(csrf_protect, name='dispatch')
@@ -119,3 +133,96 @@ class VerifyUserView(APIView):
         # Log Successful Verification
         log_action(request, action="email_verification", status="SUCCESS", user=user)
         return Response({"message": "Verification successful!"})
+
+
+
+
+
+
+
+class MFASetupView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Generate secret if not set
+        if not user.mfa_secret:
+            user.mfa_secret = pyotp.random_base32()
+            user.save()
+
+        # Create provisioning URL
+        totp = pyotp.TOTP(user.mfa_secret)
+        provisioning_url = totp.provisioning_uri(name=user.email, issuer_name="Kolik")
+
+        # Generate QR code
+        qr = qrcode.make(provisioning_url)
+        buffer = BytesIO()
+        qr.save(buffer, format="PNG")
+        qr_image_b64 = base64.b64encode(buffer.getvalue()).decode()
+
+        return Response({
+            "secret": user.mfa_secret,
+            "qr_code_base64": qr_image_b64
+        }, status=status.HTTP_200_OK)
+
+
+
+
+
+
+class VerifyMFAView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        code = request.data.get("code")
+        user = request.user
+
+        if not user.mfa_secret:
+            return Response({"error": "MFA is not set up."}, status=400)
+
+        if not code:
+            return Response({"error": "Code is required."}, status=400)
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if totp.verify(code):
+            user.mfa_enabled = True
+            user.save()
+            return Response({"message": "MFA verification successful!"}, status=200)
+        else:
+            return Response({"error": "Invalid code. Try again."}, status=400)
+
+
+
+
+class MFALoginView(APIView):
+    """
+    Verifies the 6-digit MFA code during login.
+    Accepts email and MFA code. If valid, logs the user in.
+    """
+
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("code")
+
+        if not email or not code:
+            return Response({"error": "Email and MFA code are required."}, status=400)
+
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found."}, status=404)
+
+        if not user.mfa_enabled or not user.mfa_secret:
+            return Response({"error": "MFA is not enabled for this account."}, status=400)
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if totp.verify(code):
+            login(request, user)
+            return Response({
+                "message": "MFA verification successful. You are now logged in.",
+                "user_id": str(user.id),
+                "email": user.email
+            }, status=200)
+        else:
+            return Response({"error": "Invalid MFA code."}, status=400)            
