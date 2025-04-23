@@ -25,6 +25,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
     privacy_policy_accepted_at = models.DateTimeField(null=True, blank=True)
 
+    #MFA
+    mfa_enabled = models.BooleanField(default=False)
+    mfa_secret = models.CharField(max_length=32, blank=True, null=True)
+
     # Required fields
     is_active = models.BooleanField(default=False)  # Only True after both verifications
     is_staff = models.BooleanField(default=False)

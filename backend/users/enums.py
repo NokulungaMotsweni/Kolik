@@ -6,6 +6,9 @@ class AuditAction(models.TextChoices):
     EMAIL_VERIFIED = "email_verified", "Email Verified"
     LOGOUT = "logout", "Logout"
     PROFILE_UPDATED = "profile_updated", "Profile Updated"
+    MFA_SETUP_STARTED = "mfa_setup_started", "MFA Setup Started"
+    MFA_VERIFIED = "mfa_verified", "MFA Verified"
+    MFA_LOGIN = "mfa_login", "MFA Login"
 
 class AuditStatus(models.TextChoices):
     SUCCESS = "SUCCESS", "Success"
