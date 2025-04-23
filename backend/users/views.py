@@ -1,20 +1,34 @@
+# Standard library imports
+import hashlib
+import base64
+from io import BytesIO
+from datetime import timedelta
+
+# Django core imports
+from django.utils import timezone
+from django.contrib.auth import logout, login, get_user_model
+from django.views.decorators.csrf import csrf_protect
+from django.utils.decorators import method_decorator
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.password_validation import validate_password
+
+# Django REST Framework imports
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import RegisterSerializer, LoginSerializer
-from users.models import CustomUser, UserVerification
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import logout
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
-from django.utils import timezone
-import hashlib
-from utils.audit import log_login, log_action, get_login_failure_reason
+
+# Third-party packages
 import pyotp
 import qrcode
-import base64
-from io import BytesIO
-from django.contrib.auth import login
+
+# Project-level imports
+from utils.audit import log_login, log_action, get_login_failure_reason
+from .serializers import RegisterSerializer, LoginSerializer
+from users.models import CustomUser, UserVerification, VerificationType
+
+
+User = get_user_model()
 
 
 
@@ -240,3 +254,103 @@ class MFALoginView(APIView):
             log_action(request, action="mfa_login", status="FAILED", user=user)
             log_login(request, email=email, success=False, user=user, failure_reason="Invalid MFA code")
             return Response({"error": "Invalid MFA code."}, status=400)
+
+
+
+
+
+
+
+
+class PasswordResetRequestView(APIView):
+    """
+    Step 1: Accept user's email and generate a password reset token.
+    """
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "Email is required."}, status=400)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # Do not reveal if user exists
+            return Response({"message": "If this email exists, a reset link will be sent."}, status=200)
+
+        # Get or create password reset verification type
+        verification_type, _ = VerificationType.objects.get_or_create(
+            name="Password Reset",
+            defaults={"requires_token": True, "expires_on": timedelta(minutes=30)}
+        )
+
+        # Invalidate previous tokens
+        UserVerification.objects.filter(
+            user=user,
+            verification_type=verification_type,
+            is_latest=True
+        ).update(is_latest=False)
+
+        # Create new token
+        verification = UserVerification.objects.create(
+            user=user,
+            verification_type=verification_type,
+            expires_at=timezone.now() + verification_type.expires_on,
+            is_latest=True
+        )
+
+        raw_token = verification.generate_token()
+        verification.save()
+
+        # TEMP: print raw token (we will email this later)
+        print("RESET TOKEN:", raw_token)
+
+        return Response({"message": "If this email exists, a reset link will be sent."}, status=200)   
+
+
+
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    Step 2: Confirm token and allow the user to set a new password.
+    """
+
+    def post(self, request):
+        token = request.data.get("token")
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        if not token or not new_password or not confirm_password:
+            return Response({"error": "Token, new_password, and confirm_password are required."}, status=400)
+
+        if new_password != confirm_password:
+            return Response({"error": "Passwords do not match."}, status=400)
+
+        # Validate token
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+        try:
+            verification = UserVerification.objects.get(token_hash=token_hash, is_latest=True)
+        except UserVerification.DoesNotExist:
+            return Response({"error": "Invalid or expired token."}, status=400)
+
+        if verification.expires_at < timezone.now():
+            return Response({"error": "Token expired."}, status=400)
+
+        # Update password
+        user = verification.user
+        try:
+            validate_password(new_password, user=user)
+        except DjangoValidationError as e:
+            return Response({"error": e.messages}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+
+        # Mark verification as used
+        verification.is_verified = True
+        verification.verified_at = timezone.now()
+        verification.save()
+
+        return Response({"message": "Password has been reset successfully."}, status=200)                 

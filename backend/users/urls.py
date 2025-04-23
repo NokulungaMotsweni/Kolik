@@ -8,7 +8,8 @@ These endpoints handle:
 """
 
 from django.urls import path
-from users.views import RegisterView, LoginView, LogoutView, VerifyUserView, MFASetupView, VerifyMFAView, MFALoginView
+from users.views import RegisterView, LoginView, LogoutView, VerifyUserView, MFASetupView, VerifyMFAView, MFALoginView, PasswordResetRequestView, PasswordResetConfirmView
+
 
 
 
@@ -20,4 +21,6 @@ urlpatterns = [
     path('mfa/setup/', MFASetupView.as_view(), name='mfa-setup'),
     path('verify-mfa/', VerifyMFAView.as_view(), name='verify-mfa'),
     path('mfa-login/', MFALoginView.as_view(), name='mfa-login'),
+    path('password-reset/request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
+    path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
 ]
