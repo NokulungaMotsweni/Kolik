@@ -161,6 +161,9 @@ class MFASetupView(APIView):
         qr.save(buffer, format="PNG")
         qr_image_b64 = base64.b64encode(buffer.getvalue()).decode()
 
+        # setup start is logged
+        log_action(request, action="mfa_setup_started", status="SUCCESS", user=user)
+
         return Response({
             "secret": user.mfa_secret,
             "qr_code_base64": qr_image_b64
@@ -179,17 +182,21 @@ class VerifyMFAView(APIView):
         user = request.user
 
         if not user.mfa_secret:
+            log_action(request, action="mfa_verified", status="FAILED", user=user)
             return Response({"error": "MFA is not set up."}, status=400)
 
         if not code:
+            log_action(request, action="mfa_verified", status="FAILED", user=user)
             return Response({"error": "Code is required."}, status=400)
 
         totp = pyotp.TOTP(user.mfa_secret)
         if totp.verify(code):
             user.mfa_enabled = True
             user.save()
+            log_action(request, action="mfa_verified", status="SUCCESS", user=user)
             return Response({"message": "MFA verification successful!"}, status=200)
         else:
+            log_action(request, action="mfa_verified", status="FAILED", user=user)
             return Response({"error": "Invalid code. Try again."}, status=400)
 
 
@@ -206,23 +213,30 @@ class MFALoginView(APIView):
         code = request.data.get("code")
 
         if not email or not code:
+            log_action(request, action="mfa_login", status="FAILED")
             return Response({"error": "Email and MFA code are required."}, status=400)
 
         try:
             user = CustomUser.objects.get(email=email)
         except CustomUser.DoesNotExist:
+            log_action(request, action="mfa_login", status="FAILED")
             return Response({"error": "User not found."}, status=404)
 
         if not user.mfa_enabled or not user.mfa_secret:
+            log_action(request, action="mfa_login", status="FAILED", user=user)
             return Response({"error": "MFA is not enabled for this account."}, status=400)
 
         totp = pyotp.TOTP(user.mfa_secret)
         if totp.verify(code):
             login(request, user)
+            log_action(request, action="mfa_login", status="SUCCESS", user=user)
+            log_login(request, email=email, success=True, user=user)  # Record login success
             return Response({
                 "message": "MFA verification successful. You are now logged in.",
                 "user_id": str(user.id),
                 "email": user.email
             }, status=200)
         else:
-            return Response({"error": "Invalid MFA code."}, status=400)            
+            log_action(request, action="mfa_login", status="FAILED", user=user)
+            log_login(request, email=email, success=False, user=user, failure_reason="Invalid MFA code")
+            return Response({"error": "Invalid MFA code."}, status=400)
