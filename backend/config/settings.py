@@ -122,3 +122,30 @@ TEMPLATES = [
 # DEFAULTS
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Default for model primary keys
 
+
+
+# --- CORS + CSRF for Frontend Integration ---
+
+# Required apps
+INSTALLED_APPS += ['corsheaders']
+
+# CorsMiddleware must be at the top
+MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+
+# Allow cookies to be sent (for session login)
+CORS_ALLOW_CREDENTIALS = True
+
+# Allow only the local frontend during development
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+# CSRF protection settings
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+# Allow React frontend to read CSRF cookie for login
+CSRF_COOKIE_HTTPONLY = False  # must be False so frontend can access it
+
+
