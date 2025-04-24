@@ -122,3 +122,24 @@ TEMPLATES = [
 # DEFAULTS
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Default for model primary keys
 
+
+
+# --- CORS HEADERS (Frontend Integration) ---
+# Allow React frontend (Vite) at localhost:5173 to connect to this backend
+INSTALLED_APPS += ['corsheaders']
+
+# Must come FIRST in the middleware stack
+MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+
+# Allow frontend to send cookies (for login sessions)
+CORS_ALLOW_CREDENTIALS = True
+
+# Allow only this frontend origin (for dev)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+# CSRF protection for POST/PUT requests from frontend
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
