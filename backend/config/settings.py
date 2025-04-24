@@ -124,22 +124,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Default for model primar
 
 
 
-# --- CORS HEADERS (Frontend Integration) ---
-# Allow React frontend (Vite) at localhost:5173 to connect to this backend
+# --- CORS + CSRF for Frontend Integration ---
+
+# Required apps
 INSTALLED_APPS += ['corsheaders']
 
-# Must come FIRST in the middleware stack
+# CorsMiddleware must be at the top
 MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
 
-# Allow frontend to send cookies (for login sessions)
+# Allow cookies to be sent (for session login)
 CORS_ALLOW_CREDENTIALS = True
 
-# Allow only this frontend origin (for dev)
+# Allow only the local frontend during development
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-# CSRF protection for POST/PUT requests from frontend
+# CSRF protection settings
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
+
+# Allow React frontend to read CSRF cookie for login
+CSRF_COOKIE_HTTPONLY = False  # must be False so frontend can access it
+
+

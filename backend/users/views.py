@@ -28,6 +28,9 @@ from .serializers import RegisterSerializer, LoginSerializer
 from users.models import CustomUser, UserVerification, VerificationType
 
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 User = get_user_model()
 
 
@@ -353,4 +356,13 @@ class PasswordResetConfirmView(APIView):
         verification.verified_at = timezone.now()
         verification.save()
 
-        return Response({"message": "Password has been reset successfully."}, status=200)                 
+        return Response({"message": "Password has been reset successfully."}, status=200)  
+
+
+
+
+
+
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    return JsonResponse({'message': 'CSRF cookie set'})                       
