@@ -1,7 +1,7 @@
 """
 URL configuration for the Kolik Django project.
 
-This file routes top-level API endpoints and admin interface access.
+This file routes API endpoints and admin interface access.
 
 Routes:
 - /admin/ → Django admin panel

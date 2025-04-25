@@ -5,8 +5,7 @@ This configuration file defines the core setup of the Django backend,
 including installed apps, database settings, middleware, static/media paths,
 internationalization, and REST framework integration.
 
-Sensitive values (e.g., SECRET_KEY) are stored securely in a .env file
-and loaded using python-decouple for safe development and deployment.
+Sensitive values (e.g., SECRET_KEY) are stored securely in a .env file.
 """
 
 from decouple import config  # .env file
