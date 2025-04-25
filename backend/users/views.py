@@ -63,23 +63,31 @@ class LoginView(APIView):
     """
 
     def post(self, request):
-        email = request.data.get('email')  # Used for logging even on failure
+        email = request.data.get('email')
         serializer = LoginSerializer(data=request.data, context={"request": request})
 
         if serializer.is_valid():
             user = serializer.validated_data["user"]
 
-            #  MFA is not set up yet → force setup
-            if not user.mfa_secret or not user.mfa_enabled:
-                log_login(request, email=email, success=False, failure_reason="MFA setup required")
+            # Ensure email is verified and MFA is enabled
+            if not user.is_email_verified:
+                log_login(request, email=email, success=False, failure_reason="Email not verified")
                 return Response({
-                    "mfa_setup_required": True,
-                    "message": "MFA setup is required. Scan QR and verify your 6-digit code.",
+                    "message": "Please verify your email address before logging in.",
                     "user_id": str(user.id),
                     "email": user.email
                 }, status=status.HTTP_403_FORBIDDEN)
 
-            #  MFA is enabled → go to second step (mfa-login)
+            if not user.mfa_enabled:
+                log_login(request, email=email, success=False, failure_reason="MFA setup required")
+                return Response({
+                    "mfa_setup_required": True,
+                    "message": "Please set up MFA before proceeding.",
+                    "user_id": str(user.id),
+                    "email": user.email
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            # Proceed to MFA login (if MFA is enabled)
             log_login(request, email=email, success=True, user=user)
             return Response({
                 "mfa_required": True,
@@ -87,10 +95,10 @@ class LoginView(APIView):
                 "email": user.email
             }, status=status.HTTP_200_OK)
 
-        #  Login failed → log and return error
+        # Login failed → log and return error
         failure_reason = get_login_failure_reason(serializer.errors)
         log_login(request, email=email, success=False, failure_reason=failure_reason)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @method_decorator(csrf_protect, name='dispatch')
@@ -125,7 +133,7 @@ class VerifyUserView(APIView):
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
         try:
-            verification = UserVerification.objects.get(token_hash=token_hash, is_latest = True)
+            verification = UserVerification.objects.get(token_hash=token_hash, is_latest=True)
         except UserVerification.DoesNotExist:
             log_action(request, action="email_verification", status="FAILED")
             return Response({"message": "Token is Invalid or Expired."}, status=400)
@@ -144,7 +152,10 @@ class VerifyUserView(APIView):
         # Update User Flags
         user = verification.user
         user.is_email_verified = True
-        user.is_active = user.is_email_verified
+        
+        # Only activate user if both email and MFA are verified
+        if user.is_email_verified and user.mfa_enabled:
+            user.is_active = True
         user.save()
 
         # Log Successful Verification
@@ -163,12 +174,12 @@ class MFASetupView(APIView):
     def get(self, request):
         user = request.user
 
-        # Generate secret if not set
+        # If MFA is not enabled yet, generate secret
         if not user.mfa_secret:
             user.mfa_secret = pyotp.random_base32()
             user.save()
 
-        # Create provisioning URL
+        # Create provisioning URL (QR code will be generated)
         totp = pyotp.TOTP(user.mfa_secret)
         provisioning_url = totp.provisioning_uri(name=user.email, issuer_name="Kolik")
 
@@ -178,9 +189,14 @@ class MFASetupView(APIView):
         qr.save(buffer, format="PNG")
         qr_image_b64 = base64.b64encode(buffer.getvalue()).decode()
 
-        # setup start is logged
+        # Log that MFA setup started
         log_action(request, action="mfa_setup_started", status="SUCCESS", user=user)
 
+        # After QR code setup, mark MFA as enabled
+        user.mfa_enabled = True
+        user.save()
+
+        # Return QR code image and secret to the user
         return Response({
             "secret": user.mfa_secret,
             "qr_code_base64": qr_image_b64
