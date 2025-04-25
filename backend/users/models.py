@@ -11,7 +11,6 @@ from .enums import AuditStatus, AuditAction
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=20, unique=True)
     # hashed_password = models.CharField(max_length=255)
 
     # Optional (future): blocked_until = models.DateTimeField(null=True, blank=True)
@@ -19,7 +18,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Verification flags
     is_email_verified = models.BooleanField(default=False)
-    is_phone_verified = models.BooleanField(default=False)
 
     # Consent timestamps
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
@@ -36,7 +34,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Login field
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['phone_number']
+    REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
 

@@ -27,7 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'phone_number', 'password', 'confirm_password']
+        fields = ['email', 'password', 'confirm_password']
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -68,19 +68,17 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """
         Creates a new user. The account is inactive by default and awaits
-        phone and email verification. Consent timestamps are stored.
+        email verification. Consent timestamps are stored.
         """
         validated_data.pop('confirm_password')
 
-        # Create Inactive User Awaiting Verification
+        #Create Inactive User Awaiting Email Verification
         user = User.objects.create_user(
             email=validated_data['email'],
-            phone_number=validated_data['phone_number'],
             password=validated_data['password'],
         )
-        user.is_active = False
+        user.is_active = False  # Only True after email verification
         user.is_email_verified = False
-        user.is_phone_verified = False
         user.terms_accepted_at = timezone.now()
         user.privacy_policy_accepted_at = timezone.now()
         user.save()
@@ -200,11 +198,4 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 
-# TODO 
-# - Add rate limiting 
-# - Log login attempts 
-# - Support session tokens
-# - Detect and block suspicious login behavior (e.g., too many logins from new IPs)
-# - Integrate 2FA 
-# - Add account lockout after multiple failed attempts (with cooldown)
-# - Optionally notify users on successful login from a new device or location        
+       

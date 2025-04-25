@@ -38,7 +38,7 @@ User = get_user_model()
 class RegisterView(APIView):
     """
     Handles secure user registration.
-    Ensures full control for later features like OTP, reCAPTCHA, etc.
+    
     """
 
     def post(self, request):
@@ -46,7 +46,7 @@ class RegisterView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             return Response({
-                "message": "Account created. Please verify your email and phone number.",
+                "message": "Account created. Please verify your email.",
                 "user_id": str(user.id)
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -144,7 +144,7 @@ class VerifyUserView(APIView):
         # Update User Flags
         user = verification.user
         user.is_email_verified = True
-        user.is_active = user.is_email_verified and user.is_phone_verified
+        user.is_active = user.is_email_verified
         user.save()
 
         # Log Successful Verification

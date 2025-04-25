@@ -19,25 +19,23 @@ class CustomUserAdmin(UserAdmin):
     Custom admin configuration for the CustomUser model.
     Extends Django's built-in UserAdmin to support:
     - Email-based login
-    - Phone number field
-    - Email and phone verification flags
     - Custom field organization in the admin panel
     """
     model = CustomUser
 
     # Columns visible in the admin user list
     list_display = (
-        'email', 'phone_number', 'is_active', 'is_staff', 'is_superuser',
-        'is_email_verified', 'is_phone_verified'
+        'email', 'is_active', 'is_staff', 'is_superuser',
+        'is_email_verified'
     )
-    list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'is_phone_verified')
+    list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_email_verified')
     ordering = ('email',)
-    search_fields = ('email', 'phone_number')
+    search_fields = ('email',)
 
     # Fields shown when viewing a user object
     fieldsets = (
-        (None, {'fields': ('email', 'phone_number', 'password')}),
-        (_('Verification'), {'fields': ('is_email_verified', 'is_phone_verified')}),
+        (None, {'fields': ('email', 'password')}),
+        (_('Verification'), {'fields': ('is_email_verified',)}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
         (_('Consents'), {'fields': ('terms_accepted_at', 'privacy_policy_accepted_at')}),
@@ -47,7 +45,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'phone_number', 'password1', 'password2'),
+            'fields': ('email', 'password1', 'password2'),
         }),
     )
 
