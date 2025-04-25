@@ -27,7 +27,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'confirm_password']
+        fields = ['name', 'email', 'password', 'confirm_password']
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -37,13 +37,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         Enforces password security using both Django validators and
         custom complexity rules (uppercase, lowercase, number, special char).
         """
-        # Step 1: Run Django's built-in validators (e.g., min length, common password)
         try:
             validate_password(value)
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.messages)
 
-        # Step 2: Custom rules
+        # Custom password validation rules
         if len(value) < 10:
             raise serializers.ValidationError("Password must be at least 10 characters long.")
         if not re.search(r"[A-Z]", value):
@@ -72,10 +71,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         """
         validated_data.pop('confirm_password')
 
-        #Create Inactive User Awaiting Email Verification
+        # Create Inactive User Awaiting Email Verification
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
+            name=validated_data['name'],  # Store name here
         )
         user.is_active = False  # Only True after email verification
         user.is_email_verified = False
@@ -103,8 +103,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         raw_token = verification.generate_token()
         verification.save()
 
-        # THIS IS TEMPORARY FOR DEV/TESTING IF WE DECIDE TO KEEP THE TOKEN AND FIGURE OUT HOW TO EMAIL
-        print("Verification Token: ", raw_token) # RAW TOKEN AS IT WILL GO TO THE USER
+        # TEMPORARY FOR DEV/TESTING (REMOVE BEFORE PROD)
+        print("Verification Token: ", raw_token)
+
         return user
 
 

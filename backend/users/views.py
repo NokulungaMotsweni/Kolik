@@ -59,27 +59,38 @@ class RegisterView(APIView):
 class LoginView(APIView):
     """
     Authenticates a user using email and password.
-    Enforces MFA setup if not enabled. If MFA is enabled, waits for MFA code.
+    Allows login after email verification, even if MFA is not set up yet,
+    so the user can proceed to the MFA setup page.
     """
 
     def post(self, request):
-        email = request.data.get('email')  # Used for logging even on failure
+        email = request.data.get('email')
         serializer = LoginSerializer(data=request.data, context={"request": request})
 
         if serializer.is_valid():
             user = serializer.validated_data["user"]
 
-            #  MFA is not set up yet → force setup
-            if not user.mfa_secret or not user.mfa_enabled:
-                log_login(request, email=email, success=False, failure_reason="MFA setup required")
+            # Email must be verified first
+            if not user.is_email_verified:
+                log_login(request, email=email, success=False, failure_reason="Email not verified")
                 return Response({
-                    "mfa_setup_required": True,
-                    "message": "MFA setup is required. Scan QR and verify your 6-digit code.",
+                    "message": "Please verify your email address before logging in.",
                     "user_id": str(user.id),
                     "email": user.email
                 }, status=status.HTTP_403_FORBIDDEN)
 
-            #  MFA is enabled → go to second step (mfa-login)
+            # Allow login for MFA setup if not yet completed
+            if not user.mfa_enabled:
+                login(request, user)  # <-- authenticate the session
+                log_login(request, email=email, success=True, user=user)
+                return Response({
+                    "mfa_setup_required": True,
+                    "message": "MFA setup is required. Please scan your QR code.",
+                    "user_id": str(user.id),
+                    "email": user.email
+                }, status=status.HTTP_200_OK)
+
+            # MFA is enabled → Require second step
             log_login(request, email=email, success=True, user=user)
             return Response({
                 "mfa_required": True,
@@ -87,10 +98,10 @@ class LoginView(APIView):
                 "email": user.email
             }, status=status.HTTP_200_OK)
 
-        #  Login failed → log and return error
+        # Login failed
         failure_reason = get_login_failure_reason(serializer.errors)
         log_login(request, email=email, success=False, failure_reason=failure_reason)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @method_decorator(csrf_protect, name='dispatch')
@@ -113,8 +124,9 @@ class LogoutView(APIView):
 
 class VerifyUserView(APIView):
     """
-    Verifies the User via Token, Token Must be Valid and Not Expired.
-    The Verification Flags are Updated and User is Activated.
+    Verifies the User via Token. 
+    After successful email verification, 
+    activates the user account (even if MFA is not set yet).
     """
     def post(self, request):
         token = request.data.get('token')
@@ -125,7 +137,7 @@ class VerifyUserView(APIView):
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
         try:
-            verification = UserVerification.objects.get(token_hash=token_hash, is_latest = True)
+            verification = UserVerification.objects.get(token_hash=token_hash, is_latest=True)
         except UserVerification.DoesNotExist:
             log_action(request, action="email_verification", status="FAILED")
             return Response({"message": "Token is Invalid or Expired."}, status=400)
@@ -137,20 +149,19 @@ class VerifyUserView(APIView):
         if verification.expires_at < timezone.now():
             return Response({"message": "Token is Expired."}, status=400)
 
+        # Mark the token as verified
         verification.is_verified = True
         verification.verified_at = timezone.now()
         verification.save()
 
-        # Update User Flags
+        # Update user flags
         user = verification.user
         user.is_email_verified = True
-        user.is_active = user.is_email_verified
+        user.is_active = True  # Always activate after email verification
         user.save()
 
-        # Log Successful Verification
         log_action(request, action="email_verification", status="SUCCESS", user=user)
         return Response({"message": "Verification successful!"})
-
 
 
 
@@ -163,28 +174,26 @@ class MFASetupView(APIView):
     def get(self, request):
         user = request.user
 
-        # Generate secret if not set
+        # If MFA is not initialized, generate secret
         if not user.mfa_secret:
             user.mfa_secret = pyotp.random_base32()
             user.save()
 
-        # Create provisioning URL
+        # Create QR code for Google Authenticator
         totp = pyotp.TOTP(user.mfa_secret)
         provisioning_url = totp.provisioning_uri(name=user.email, issuer_name="Kolik")
 
-        # Generate QR code
         qr = qrcode.make(provisioning_url)
         buffer = BytesIO()
         qr.save(buffer, format="PNG")
         qr_image_b64 = base64.b64encode(buffer.getvalue()).decode()
 
-        # setup start is logged
         log_action(request, action="mfa_setup_started", status="SUCCESS", user=user)
 
         return Response({
             "secret": user.mfa_secret,
             "qr_code_base64": qr_image_b64
-        }, status=status.HTTP_200_OK)
+        }, status=200)
 
 
 
@@ -239,9 +248,16 @@ class MFALoginView(APIView):
             log_action(request, action="mfa_login", status="FAILED")
             return Response({"error": "User not found."}, status=404)
 
+        if not user.is_active or not user.is_email_verified:
+            log_action(request, action="mfa_login", status="FAILED", user=user)
+            return Response({"error": "Account is not active or email is not verified."}, status=403)
+
         if not user.mfa_enabled or not user.mfa_secret:
             log_action(request, action="mfa_login", status="FAILED", user=user)
             return Response({"error": "MFA is not enabled for this account."}, status=400)
+
+        if not code.isdigit() or len(code) != 6:
+            return Response({"error": "MFA code must be a 6-digit number."}, status=400)
 
         totp = pyotp.TOTP(user.mfa_secret)
         if totp.verify(code):
@@ -257,7 +273,6 @@ class MFALoginView(APIView):
             log_action(request, action="mfa_login", status="FAILED", user=user)
             log_login(request, email=email, success=False, user=user, failure_reason="Invalid MFA code")
             return Response({"error": "Invalid MFA code."}, status=400)
-
 
 
 

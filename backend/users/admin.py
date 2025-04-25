@@ -19,23 +19,23 @@ class CustomUserAdmin(UserAdmin):
     Custom admin configuration for the CustomUser model.
     Extends Django's built-in UserAdmin to support:
     - Email-based login
+    - MFA status
     - Custom field organization in the admin panel
     """
     model = CustomUser
 
     # Columns visible in the admin user list
     list_display = (
-        'email', 'is_active', 'is_staff', 'is_superuser',
-        'is_email_verified'
+        'email', 'name', 'is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled'
     )
-    list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_email_verified')
+    list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled')
     ordering = ('email',)
-    search_fields = ('email',)
+    search_fields = ('email', 'name')
 
     # Fields shown when viewing a user object
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        (_('Verification'), {'fields': ('is_email_verified',)}),
+        (None, {'fields': ('email', 'name', 'password')}),
+        (_('Verification'), {'fields': ('is_email_verified', 'mfa_enabled')}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
         (_('Consents'), {'fields': ('terms_accepted_at', 'privacy_policy_accepted_at')}),
@@ -45,7 +45,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2'),
+            'fields': ('email', 'name', 'password1', 'password2'),
         }),
     )
 

@@ -10,6 +10,7 @@ from .enums import AuditStatus, AuditAction
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, blank=True)
     email = models.EmailField(unique=True)
     # hashed_password = models.CharField(max_length=255)
 
@@ -34,7 +35,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Login field
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['name']
 
     objects = CustomUserManager()
 
