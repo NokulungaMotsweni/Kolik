@@ -337,4 +337,15 @@ Files Updated:
 - Fixed serializer typo: `expires_on` → `expires_at` to fix token expiry issue.
 - Moved `.idea/` and backend `.gitignore` entries to **root `.gitignore`** for a cleaner repo (removes IDE clutter).
 
+### 2025-04-25 — Authentication refactor (Agáta)  
+- Refactored full registration, email verification, login, MFA setup, MFA login, and logout flows.
+- Users become is_active after email verification.
+- Forced MFA setup after first login if MFA is not configured yet.
+- If MFA is missing → login allowed only for MFA setup.
+- If MFA is enabled → proceed to MFA code verification.
+- Added name field to CustomUser model.
+- Manually tested full secure authentication flow end-to-end
+- Confirmed session cookies are properly created and deleted.
+
+
 
