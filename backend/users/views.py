@@ -434,22 +434,28 @@ def track_cookies(request):
     return HttpResponse("Cookies tracked!")
 
 def accept_mandatory_only(request):
+    """
+    Accept only mandatory cookies for the authenticated user.
+    Update: User's cookie consent record.
+    Logs: Cookie consent action.
+    """
     if request.user.is_authenticated:
-        # Update the existing consent record or create a new one
+        # Update or create the user's CookieConsent record
         CookieConsent.objects.update_or_create(
             user=request.user,
             defaults={
-                'consent_given': True,
-                'policy_version': settings.COOKIE_POLICY_VERSION,
-                'cookie_selection': CookieConsentType.MANDATORY_ONLY
+                'consent_given': True,  # User gives consent (for mandatory cookies only)
+                'policy_version': settings.COOKIE_POLICY_VERSION, # Save the current cookie policy version
+                'cookie_selection': CookieConsentType.MANDATORY_ONLY # Show that only mandatory cookies are accepted
             }
         )
+
+        # Log cookie consent action
         log_action(
             request=request,
             action="cookie_consent",
             status="SUCCESS",
             user=request.user,
         )
-
-    # Redirect the user back to the page they came from, or home if unavailable
-    return redirect(request.META.get('HTTP_REFERER','/'))
+    # Redirect to the previous page or to homepage of the referer is missing
+    return redirect(request.META.get('HTTP_REFERER', '/'))

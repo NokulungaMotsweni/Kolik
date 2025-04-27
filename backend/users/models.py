@@ -220,7 +220,7 @@ class CookieConsent(models.Model):
 
     # Version of the cookie policy the user agreed to
     policy_version = models.CharField(max_length=10)
-    
+
     # Selection of Cookies
     cookie_selection = models.CharField(
         max_length=30,
