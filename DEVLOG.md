@@ -305,3 +305,47 @@ Files Updated:
 * models.py (AuditLog model)
 * utils/audit.py (log_action() )
 * views.py (LogoutView updated)
+
+
+### 2025-04-23 — MFA & Password Reset Enhancements (Agáta)  
+**Branch:** `mfa`
+
+#### MFA flow finalized
+- Enforced **mandatory MFA setup** after successful login.
+- Added **QR code generation** using `pyotp` and `qrcode` for Google Authenticator.
+- Created views:
+  - `MFASetupView` — generates QR and secret
+  - `VerifyMFAView` — verifies user's 6-digit code
+  - `MFALoginView` — completes MFA-protected login
+- Logged MFA actions:
+  - `mfa_setup_started`
+  - `mfa_verified`
+  - `mfa_login`
+- Used `log_action()` to store logs in **AuditLog**.
+- No new models — all MFA info stored on the user model.
+
+#### Password reset flow implemented
+- Reused **UserVerification** and **VerificationType** models — no new DB fields.
+- Views added:
+  - `PasswordResetRequestView` — prints reset token to terminal
+  - `PasswordResetConfirmView` — validates token and resets password
+- Token expiration (30 min) handled via `VerificationType`.
+- **No logging or rate limiting yet** 
+
+#### Cleanup and refactor
+- Moved `/verify/` endpoint from `config/urls.py` to `users/urls.py` for clarity.
+- Fixed serializer typo: `expires_on` → `expires_at` to fix token expiry issue.
+- Moved `.idea/` and backend `.gitignore` entries to **root `.gitignore`** for a cleaner repo (removes IDE clutter).
+
+### 2025-04-25 — Authentication refactor (Agáta)  
+- Refactored full registration, email verification, login, MFA setup, MFA login, and logout flows.
+- Users become is_active after email verification.
+- Forced MFA setup after first login if MFA is not configured yet.
+- If MFA is missing → login allowed only for MFA setup.
+- If MFA is enabled → proceed to MFA code verification.
+- Added name field to CustomUser model.
+- Manually tested full secure authentication flow end-to-end
+- Confirmed session cookies are properly created and deleted.
+
+
+

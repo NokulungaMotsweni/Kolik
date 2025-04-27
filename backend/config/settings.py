@@ -5,8 +5,7 @@ This configuration file defines the core setup of the Django backend,
 including installed apps, database settings, middleware, static/media paths,
 internationalization, and REST framework integration.
 
-Sensitive values (e.g., SECRET_KEY) are stored securely in a .env file
-and loaded using python-decouple for safe development and deployment.
+Sensitive values (e.g., SECRET_KEY) are stored securely in a .env file.
 """
 
 from decouple import config  # .env file
@@ -121,4 +120,31 @@ TEMPLATES = [
 
 # DEFAULTS
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Default for model primary keys
+
+
+
+# --- CORS + CSRF for Frontend Integration ---
+
+# Required apps
+INSTALLED_APPS += ['corsheaders']
+
+# CorsMiddleware must be at the top
+MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
+
+# Allow cookies to be sent (for session login)
+CORS_ALLOW_CREDENTIALS = True
+
+# Allow only the local frontend during development
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+# CSRF protection settings
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+# Allow React frontend to read CSRF cookie for login
+CSRF_COOKIE_HTTPONLY = False  # must be False so frontend can access it
+
 
