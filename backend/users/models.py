@@ -158,7 +158,7 @@ class Cookies(models.Model):
     """
 
     # Link to the user; nullable if the user gets deleted
-    object = models.Manager()
+    objects = models.Manager()
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
