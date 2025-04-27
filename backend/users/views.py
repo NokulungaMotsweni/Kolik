@@ -22,16 +22,16 @@ from rest_framework.permissions import IsAuthenticated
 import pyotp
 import qrcode
 
+from config import settings
 # Project-level imports
 from utils.audit import log_login, log_action, get_login_failure_reason
 from .serializers import RegisterSerializer, LoginSerializer
-from users.models import CustomUser, UserVerification, VerificationType
+from users.models import CustomUser, UserVerification, VerificationType, CookieConsent, Cookies
 from .enums import CookieType
 
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
-
 User = get_user_model()
 
 
@@ -383,6 +383,7 @@ class PasswordResetConfirmView(APIView):
 def get_csrf_token(request):
     return JsonResponse({'message': 'CSRF cookie set'})
 
+# Map of know cookie names to their type classification
 COOKIE_TYPE_MAP = {
     'csrftoken': CookieType.MANDATORY,
     'sessionid': CookieType.MANDATORY,
@@ -391,10 +392,19 @@ COOKIE_TYPE_MAP = {
 }
 
 def has_user_consented(user):
+    """
+    Checks if the given user has consented to the current cookie policy version.
+    Returns:
+        - True: If consent is given and policy version matches.
+        - False: Treat as non consented.
+    """
     try:
+        # Fetch user's consent record
         consent = CookieConsent.objects.get(user=user)
+        # Return True only if consent is given and policy version matches
         return consent.consent_given and consent.policy_version == settings.COOKIE_POLICY_VERSION
     except CookieConsent.DoesNotExist:
+        # If no consent record found, treat as not consented.
         return False
 
 def track_cookies(request):

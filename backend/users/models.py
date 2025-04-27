@@ -158,15 +158,16 @@ class Cookies(models.Model):
     """
 
     # Link to the user; nullable if the user gets deleted
+    object = models.Manager()
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL)
 
     # Cookie name (e.g., csrftoken, sessionID)
-    name = models.CharField(max_length=40)
+    cookie_name = models.CharField(max_length=40)
 
     # Cookie Value (session token / tracking ID etc.)
-    value = models.TextField()
+    cookie_value = models.TextField()
 
     # Cookie type using predefined set of choices
     cookie_type = models.CharField(max_length=20, choices=CookieType.choices)
@@ -196,7 +197,7 @@ class Cookies(models.Model):
             - USer's email / Username / Falls back to user ID
         """
         identifier = getattr(self.user, 'email', None) or getattr(self.user, 'username', None) or f"User {self.user.id}"
-        return f"{self.name} ({self.cookie_type}) for {identifier}"
+        return f"{self.cookie_name} ({self.cookie_type}) for {identifier}"
 
 class CookieConsent(models.Model):
     """
@@ -207,6 +208,7 @@ class CookieConsent(models.Model):
         - Date when it happened
     """
     # One-to-one link with the user; each user has exactly one CookieConsent record
+    objects = models.Manager()
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE)
