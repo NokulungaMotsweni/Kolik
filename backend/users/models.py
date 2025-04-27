@@ -117,6 +117,10 @@ class LoginAttempts(models.Model):
         return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
 
 class AuditLog(models.Model):
+    """
+    Stores Secure Audit Logs.
+    Tracks Login Attempts and Email Verification (for now).
+    """
     objects = models.Manager()
     log_id = models.AutoField(primary_key=True)
     # User that is associated with the action (nullable should the user be unknown)
