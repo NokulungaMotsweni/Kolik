@@ -433,11 +433,7 @@ def track_cookies(request):
     # Return response, simple HTTP response
     return HttpResponse("Cookies tracked!")
 
-def give_cookie_consent(request):
-    """
-        Handle user's action to give cookie consent.
-        Updates or creates a CookieConsent record for the authenticated user.
-        """
+def accept_mandatory_only(request):
     if request.user.is_authenticated:
         # Update the existing consent record or create a new one
         CookieConsent.objects.update_or_create(
