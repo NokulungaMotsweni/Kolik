@@ -144,3 +144,22 @@ class AuditLog(models.Model):
             - Timestamp
         """
         return f"{self.action} - {self.status} at {self.timestamp}"
+
+class Cookies(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL)
+    name = models.CharField(max_length=40)
+    value = models.TextField()
+    cookie_type = models.CharField(max_length=20, choices=CookieType.choices)
+    domain = models.CharField(max_length=255, null=True, blank=True)
+    path = models.CharField(max_length=255, null=True, blank=True)
+    expires = models.DateTimeField(blank=True, null=True)
+    secure = models.BooleanField(default=False)
+    http_only = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        identifier = getattr(self.user, 'email', None) or getattr(self.user, 'username', None) or f"User {self.user.id}"
+        return f"{self.name} ({self.cookie_type}) for {identifier}"
+
