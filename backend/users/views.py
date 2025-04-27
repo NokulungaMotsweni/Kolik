@@ -28,8 +28,7 @@ from config import settings
 from utils.audit import log_login, log_action, get_login_failure_reason
 from .serializers import RegisterSerializer, LoginSerializer
 from users.models import CustomUser, UserVerification, VerificationType, CookieConsent, Cookies
-from .enums import CookieType
-
+from .enums import CookieType, CookieConsentType
 
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
