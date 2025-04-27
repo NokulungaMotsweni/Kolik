@@ -24,3 +24,7 @@ class LoginFailureReason:
 class CookieType(models.TextChoices):
     MANDATORY = 'mandatory', 'Mandatory'
     ANALYTICS = 'analytics', 'Analytics'
+
+class CookieConsentType(models.TextChoices):
+    MANDATORY_ONLY = 'mandatory_only', 'Mandatory Only'
+    MANDATORY_AND_ANALYTICS = 'mandatory_and_analytics', 'Mandatory and Analytics'
