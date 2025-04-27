@@ -457,5 +457,5 @@ def accept_mandatory_only(request):
             status="SUCCESS",
             user=request.user,
         )
-    # Redirect to the previous page or to homepage of the referer is missing
+    # Redirect to the previous page or to homepage of the referrer is missing
     return redirect(request.META.get('HTTP_REFERER', '/'))
