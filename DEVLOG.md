@@ -252,7 +252,6 @@ Files Updated:
 * views.py (LoginView, LogoutView, VerifyUserView)
 
 
-Devlog 21.4
 ## Date: 21st April 2025 (Noki)
 #### Branch(es): Noki-Users-1
 ##### Improve Django Admin Configuration for User Management & Auditing
@@ -348,4 +347,73 @@ Files Updated:
 - Confirmed session cookies are properly created and deleted.
 
 
+## Date: 27st April 2025 (Noki)
+### Branch(es): Noki-Users-1
+#### Implement Full Cookie Consent Tracking and Storage (Mandatory Only vs Mandatory + Analytics)
 
+##### Add Cookie Model for Tracking:
+  * Created new **Cookie** and **CookieConsent** models to track the user cookies and their consent events.
+    * **Cookie** nodel tracks:
+      * cookie name
+      * cookie_value
+      * cookie_type
+      * lined to the user
+    * **CookieConsent** models tracks:
+      * Whether the user has given consent
+      * Which cookie policy version they have agreed to
+      * Consent Type: Mandatory Only or Mandatory + Analytics
+    * Enforced ForeignKey and One-to-One relations properly for traceability.
+
+##### Add Enums for Cookie Types and Consent Types:
+* Added CookieType Enums in enum.py:
+  * `mandatory`
+  * `analytics`
+* Added CookieConsentType Enums in enum.py:
+  * `mandatory_only`
+  * `mandatory_and_analytics`
+
+##### Add Cookie Type Mapping:
+* Created `COOKIE_TYPE_MAP` dictionary to classify cookies from browser automatically.
+  * Known cookies mapped to their typed.
+  * Cookies mapped:
+    * csrftoken
+    * sessionid
+    * ga
+    * gid
+* Only the cookies listed are saved in the mapping for performance and security purposes.
+
+##### Create CookieConsent Views:
+* Added two views:
+  * `accept_mandatory_only`
+  * `accept_mandatory_and_analytics`
+* Users are allowed to chose between acceptiong only essential cookies versus analytical tracking.
+* **Added a mechanism that the frontend can use with thwo buttons in the cookie banner.**
+
+##### Update the URL for Consent Choices:
+* Added two new paths:
+  * `/accept-mandatory/`
+  * `/accept-mandatory-analytics`
+
+##### Update Cookie Tracking Logic:
+* Used `.filter().first()` for safer lookup of user consent record.
+* Skips analytics cookies automatically if user refused them.
+
+##### Integrate AuditLog for Consent Events
+* Extended AuditLog to add cookie consent views.
+  * Logs:
+    * `action="cookie_consent"`
+    * `status="SUCCESS`
+  * Captures device info, IP address, path, and timestamp automatically.
+* Ensures full traceability of user choices for legal compliance.
+
+#### Files Created / Updated:
+* `models.py`
+  * **Cookie** 
+  * **CookieConsent**
+* `enums.py`
+  * **CookieType**
+  * **CookieConsentType**
+* `views.py`: Consent and Tracking views.
+* urls: New routing for consent actions
+* utiles/audit.py: Used existing log_action for consent events.
+* Cookie banner template (updated to offer Accept Mandatory vs Accept All)

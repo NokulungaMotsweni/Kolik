@@ -45,7 +45,7 @@ def best_deal_by_id(request, product_id):
         serializer = ProductVariantSerializer(best_variant, context={"request": request})
 
         return Response({
-            "product": product.name,
+            "product": product.cookie_name,
             "amount": product.amount,
             "unit": product.unit,
             "best_variant": serializer.data
@@ -77,7 +77,7 @@ def all_variants_by_product(request, product_id):
         serializer = ProductVariantSerializer(variants, many=True, context={"request": request})
 
         return Response({
-            "generic_product": product.name,
+            "generic_product": product.cookie_name,
             "amount": product.amount,
             "unit": product.unit,
             "variants": serializer.data
@@ -119,7 +119,7 @@ def products_by_category(request, category_id):
         serializer = GenericProductSerializer(products, many=True)
 
         return Response({
-            "category": category.name,
+            "category": category.cookie_name,
             "products": serializer.data
         })
     except Category.DoesNotExist:

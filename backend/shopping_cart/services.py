@@ -49,7 +49,7 @@ def calculate_total_per_supermarket(basket):
         # Find the cheapest variant per supermarket
         cheapest_by_market = {}
         for variant in variants:
-            market = variant.supermarket.name
+            market = variant.supermarket.cookie_name
             price = Decimal(variant.price)
 
             if market not in cheapest_by_market or price < cheapest_by_market[market].price:

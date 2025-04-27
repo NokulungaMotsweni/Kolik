@@ -147,4 +147,5 @@ CSRF_TRUSTED_ORIGINS = [
 # Allow React frontend to read CSRF cookie for login
 CSRF_COOKIE_HTTPONLY = False  # must be False so frontend can access it
 
-
+# The version of the Cookie Policy
+COOKIE_POLICY_VERSION = "1.0"
