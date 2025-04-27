@@ -439,8 +439,9 @@ def accept_mandatory_only(request):
         CookieConsent.objects.update_or_create(
             user=request.user,
             defaults={
-                'consent_given': True, # Mark consent if given
-                'policy_version': settings.COOKIE_POLICY_VERSION, # Save current policy version
+                'consent_given': True,
+                'policy_version': settings.COOKIE_POLICY_VERSION,
+                'cookie_selection': CookieConsentType.MANDATORY_ONLY
             }
         )
 
