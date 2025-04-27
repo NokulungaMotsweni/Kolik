@@ -4,6 +4,7 @@ import base64
 from io import BytesIO
 from datetime import timedelta
 
+from django.shortcuts import redirect
 # Django core imports
 from django.utils import timezone
 from django.contrib.auth import logout, login, get_user_model
@@ -429,12 +430,19 @@ def track_cookies(request):
     return HttpResponse("Cookies tracked!")
 
 def give_cookie_consent(request):
+    """
+        Handle user's action to give cookie consent.
+        Updates or creates a CookieConsent record for the authenticated user.
+        """
     if request.user.is_authenticated:
+        # Update the existing consent record or create a new one
         CookieConsent.objects.update_or_create(
             user=request.user,
             defaults={
-                'consent_given': True,
-                'policy_version': settings.COOKIE_POLICY_VERSION,
+                'consent_given': True, # Mark consent if given
+                'policy_version': settings.COOKIE_POLICY_VERSION, # Save current policy version
             }
         )
+
+    # Redirect the user back to the page they came from, or home if unavailable
     return redirect(request.META.get('HTTP_REFERER','/'))

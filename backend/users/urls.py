@@ -9,7 +9,8 @@ These endpoints handle:
 
 from django.urls import path
 from users.views import (RegisterView, LoginView, LogoutView, VerifyUserView, MFASetupView, VerifyMFAView, MFALoginView,
-                         PasswordResetRequestView, PasswordResetConfirmView, get_csrf_token, track_cookies)
+                         PasswordResetRequestView, PasswordResetConfirmView, get_csrf_token, track_cookies,
+                         give_cookie_consent)
 
 
 
@@ -25,5 +26,6 @@ urlpatterns = [
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
     path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path("api/auth/csrf/", get_csrf_token),
-    path("api/auth/track-cookies/", track_cookies),
+    path("api/auth/accept-cookies", give_cookie_consent, name="accept-cookies"),
+    path("api/auth/track-cookies/", track_cookies, name="track-cookies"),
 ]
