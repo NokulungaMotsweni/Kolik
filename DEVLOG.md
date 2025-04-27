@@ -252,7 +252,6 @@ Files Updated:
 * views.py (LoginView, LogoutView, VerifyUserView)
 
 
-Devlog 21.4
 ## Date: 21st April 2025 (Noki)
 #### Branch(es): Noki-Users-1
 ##### Improve Django Admin Configuration for User Management & Auditing
