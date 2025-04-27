@@ -427,3 +427,14 @@ def track_cookies(request):
 
     # Return response
     return HttpResponse("Cookies tracked!")
+
+def give_cookie_consent(request):
+    if request.user.is_authenticated:
+        CookieConsent.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'consent_given': True,
+                'policy_version': settings.COOKIE_POLICY_VERSION,
+            }
+        )
+    return redirect(request.META.get('HTTP_REFERER','/'))
