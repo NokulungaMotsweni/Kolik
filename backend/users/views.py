@@ -26,6 +26,7 @@ import qrcode
 from utils.audit import log_login, log_action, get_login_failure_reason
 from .serializers import RegisterSerializer, LoginSerializer
 from users.models import CustomUser, UserVerification, VerificationType
+from .enums import CookieType
 
 
 from django.http import JsonResponse
