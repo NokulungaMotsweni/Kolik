@@ -461,21 +461,31 @@ def accept_mandatory_only(request):
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 def accept_mandatory_and_analytics(request):
+    """
+    Accept both mandatory and analytics cookies for the authenticated user.
+    Update: User's cookie consent record
+    Log: Cookie consent action.
+    """
     if request.user.is_authenticated:
+        # Update or create the user's CookieConsent record
         CookieConsent.objects.update_or_create(
             user=request.user,
             defaults={
+                # User consents to both mandatory and analytics cookies
                 'consent_given': True,
+                # Save the current cookie policy version
                 'policy_version': settings.COOKIE_POLICY_VERSION,
+                # Indicate full consent for analytics too
                 'cookie_selection': CookieConsentType.MANDATORY_AND_ANALYTICS
             }
         )
 
+        # Log the cookie consent action
         log_action(
             request=request,
             action="cookie_consent",
             status="SUCCESS",
             user=request.user,
         )
-
+    # Redirect to the previous page or to homepage of the referrer is missing
     return redirect(request.META.get('HTTP_REFERER', '/'))
