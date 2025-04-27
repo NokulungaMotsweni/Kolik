@@ -20,3 +20,7 @@ class LoginFailureReason:
     MISSING_PASSWORD = "missing_password"
     INACTIVE_ACCOUNT = "inactive_account"
     UNKNOWN = "unknown"
+
+class CookieType(models.TextChoices):
+    MANDATORY = 'mandatory', 'Mandatory'
+    ANALYTICS = 'analytics', 'Analytics'
