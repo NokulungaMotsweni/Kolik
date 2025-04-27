@@ -23,5 +23,5 @@ urlpatterns = [
     path('mfa-login/', MFALoginView.as_view(), name='mfa-login'),
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
     path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
-    path("api/auth/csrf/", get_csrf_token),
+    path('csrf/', get_csrf_token)
 ]
