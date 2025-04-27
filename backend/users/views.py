@@ -413,11 +413,19 @@ def track_cookies(request):
     """
     if request.user.is_authenticated and has_user_consented(request.user):
         # Iterate through all cookies in the user's request
+        consent = CookieConsent.objects.filter(user=request.user).first()
+        if not consent:
+            return HttpResponse("No consent found.")
+
         for cookie_name, cookie_value in request.COOKIES.items():
+            cookie_name = cookie_name.lower()
             if cookie_name.lower() in COOKIE_TYPE_MAP:
-                cookie_type = COOKIE_TYPE_MAP[cookie_name.lower()]
                 # Determine the cookie type based on the map
                 cookie_type = COOKIE_TYPE_MAP[cookie_name.lower()]
+
+                # Check: if user only accepted mandatory, skip analytics cookies
+                if consent.cookie_selection == CookieConsentType.MANDATORY_ONLY and cookie_type == CookieType.ANALYTICS:
+                    continue  # Skip analytics cookies
 
                 # Create a record in the Cookies model for each cookie
                 Cookies.objects.create(
@@ -426,9 +434,6 @@ def track_cookies(request):
                     value=cookie_value,
                     cookie_type=cookie_type
                 )
-            else:
-                # Skip unknown cookies that are not listen in COOKIE_TYPE_MAP
-                continue
 
     # Return response, simple HTTP response
     return HttpResponse("Cookies tracked!")
