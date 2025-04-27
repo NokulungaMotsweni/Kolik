@@ -381,4 +381,31 @@ class PasswordResetConfirmView(APIView):
 
 @ensure_csrf_cookie
 def get_csrf_token(request):
-    return JsonResponse({'message': 'CSRF cookie set'})                       
+    return JsonResponse({'message': 'CSRF cookie set'})
+
+COOKIE_TYPE_MAP = {
+    'csrftoken': CookieType.MANDATORY,
+    'sessionid': CookieType.MANDATORY,
+    'ga': CookieType.ANALYTICS,
+    'gid': CookieType.ANALYTICS,
+}
+
+def has_user_consented(user):
+    try:
+        consent = CookieConsent.objects.get(user=user)
+        return consent.consent_given and consent.policy_version == settings.COOKIE_POLICY_VERSION
+    except CookieConsent.DoesNotExist:
+        return False
+
+def track_cookies(request):
+    if request.user.is_authenticated and has_user_consented(request.user):
+        for cookie_name, cookie_vale in request.COOKIES.items():
+            cookie_type = COOKIE_TYPE_MAP.get(cookie_name.lower(), CookieType.ANALYTICS)
+
+            Cookies.object.create(
+                user=request.user,
+                name=cookie_name,
+                value=cookie_vale,
+                cookie_type=cookie_type
+            )
+    return HttpResponse("Cookies tracked!")
