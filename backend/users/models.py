@@ -161,7 +161,9 @@ class Cookies(models.Model):
     object = models.Manager()
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL)
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
 
     # Cookie name (e.g., csrftoken, sessionID)
     cookie_name = models.CharField(max_length=40)
