@@ -133,4 +133,11 @@ class AuditLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
+        """
+        String Representation of AuditLog entry.
+        Returns:
+            - Action
+            - Status
+            - Timestamp
+        """
         return f"{self.action} - {self.status} at {self.timestamp}"
