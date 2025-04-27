@@ -349,3 +349,38 @@ Files Updated:
 
 
 
+##### Create CookieConsent Views:
+* Added two views:
+  * `accept_mandatory_only`
+  * `accept_mandatory_and_analytics`
+* Users are allowed to chose between acceptiong only essential cookies versus analytical tracking.
+* **Added a mechanism that the frontend can use with thwo buttons in the cookie banner.**
+
+##### Update the URL for Consent Choices:
+* Added two new paths:
+  * `/accept-mandatory/`
+  * `/accept-mandatory-analytics`
+
+##### Update Cookie Tracking Logic:
+* Used `.filter().first()` for safer lookup of user consent record.
+* Skips analytics cookies automatically if user refused them.
+
+##### Integrate AuditLog for Consent Events
+* Extended AuditLog to add cookie consent views.
+  * Logs:
+    * `action="cookie_consent"`
+    * `status="SUCCESS`
+  * Captures device info, IP address, path, and timestamp automatically.
+* Ensures full traceability of user choices for legal compliance.
+
+#### Files Created / Updated:
+* `models.py`
+  * **Cookie** 
+  * **CookieConsent**
+* `enums.py`
+  * **CookieType**
+  * **CookieConsentType**
+* `views.py`: Consent and Tracking views.
+* urls: New routing for consent actions
+* utiles/audit.py: Used existing log_action for consent events.
+* Cookie banner template (updated to offer Accept Mandatory vs Accept All)
