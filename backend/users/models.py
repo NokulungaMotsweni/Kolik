@@ -1,11 +1,13 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+
+from config import settings
 from .managers import CustomUserManager
 import uuid
 import hashlib
 from django.contrib.auth import get_user_model
-from .enums import AuditStatus, AuditAction
+from .enums import AuditStatus, AuditAction, CookieType
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -146,20 +148,53 @@ class AuditLog(models.Model):
         return f"{self.action} - {self.status} at {self.timestamp}"
 
 class Cookies(models.Model):
+    """
+    Stores the individual cookies associated with each user.
+    Includes:
+        - Cookie's Purpose
+        - Cookie's Expiration
+        - Security Settings
+        - Name: Type of Cookie
+    """
+
+    # Link to the user; nullable if the user gets deleted
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL)
+
+    # Cookie name (e.g., csrftoken, sessionID)
     name = models.CharField(max_length=40)
+
+    # Cookie Value (session token / tracking ID etc.)
     value = models.TextField()
+
+    # Cookie type using predefined set of choices
     cookie_type = models.CharField(max_length=20, choices=CookieType.choices)
+
+    # Domain scope for which the cookie is valid.
     domain = models.CharField(max_length=255, null=True, blank=True)
+
+    # Path scope for which the cookie is valid
     path = models.CharField(max_length=255, null=True, blank=True)
+
+    # Cookie expiration datetime
     expires = models.DateTimeField(blank=True, null=True)
+
+    # If Truem cookie is only sent obly over HTTPS
     secure = models.BooleanField(default=False)
+
+    # If True, cookie is inaccessible to client-side scripts
     http_only = models.BooleanField(default=False)
+
+    # Creation date of the cookie record
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
+        """
+        String Representation of Cookies entry.
+        Returns:
+            - USer's email / Username / Falls back to user ID
+        """
         identifier = getattr(self.user, 'email', None) or getattr(self.user, 'username', None) or f"User {self.user.id}"
         return f"{self.name} ({self.cookie_type}) for {identifier}"
 
