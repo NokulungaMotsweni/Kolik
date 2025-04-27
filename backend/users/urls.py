@@ -26,6 +26,7 @@ urlpatterns = [
     path('password-reset/request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
     path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path("api/auth/csrf/", get_csrf_token),
-    path("api/auth/accept-cookies", give_cookie_consent, name="accept-cookies"),
+    path('accept-mandatory/', accept_mandatory_only, name='accept_mandatory'),
+    path('accept-mandatory-analytics/', accept_mandatory_and_analytics, name='accept_mandatory_analytics'),
     path("api/auth/track-cookies/", track_cookies, name="track-cookies"),
 ]
