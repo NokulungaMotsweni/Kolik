@@ -7,7 +7,7 @@ from .managers import CustomUserManager
 import uuid
 import hashlib
 from django.contrib.auth import get_user_model
-from .enums import AuditStatus, AuditAction, CookieType
+from .enums import AuditStatus, AuditAction, CookieType, CookieConsentType
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
