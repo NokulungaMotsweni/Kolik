@@ -459,3 +459,23 @@ def accept_mandatory_only(request):
         )
     # Redirect to the previous page or to homepage of the referrer is missing
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+def accept_mandatory_and_analytics(request):
+    if request.user.is_authenticated:
+        CookieConsent.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'consent_given': True,
+                'policy_version': settings.COOKIE_POLICY_VERSION,
+                'cookie_selection': CookieConsentType.MANDATORY_AND_ANALYTICS
+            }
+        )
+
+        log_action(
+            request=request,
+            action="cookie_consent",
+            status="SUCCESS",
+            user=request.user,
+        )
+
+    return redirect(request.META.get('HTTP_REFERER', '/'))
