@@ -198,3 +198,34 @@ class Cookies(models.Model):
         identifier = getattr(self.user, 'email', None) or getattr(self.user, 'username', None) or f"User {self.user.id}"
         return f"{self.name} ({self.cookie_type}) for {identifier}"
 
+class CookieConsent(models.Model):
+    """
+    Records user's cookie consent decision.
+    Stores:
+        - Consent
+        - Policy Version
+        - Date when it happened
+    """
+    # One-to-one link with the user; each user has exactly one CookieConsent record
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE)
+
+    # Whether consent has been given for cookie usage
+    consent_given = models.BooleanField(default=False)
+
+    # Version of the cookie policy the user agreed to
+    policy_version = models.CharField(max_length=10)
+
+    # timestamp when the consent decision was recorded
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        """
+        Representation of CookieConsent entry.
+        Shows:
+            - Consent: True/False
+            - User's email address
+            - Policy Version
+        """
+        return f"Consent {self.consent_given} for {self.user.email} (v{self.policy_version})"
