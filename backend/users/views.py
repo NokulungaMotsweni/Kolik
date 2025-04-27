@@ -408,14 +408,22 @@ def has_user_consented(user):
         return False
 
 def track_cookies(request):
+    """
+    Track and ave cookies for authenticated users who have given consent.
+    """
     if request.user.is_authenticated and has_user_consented(request.user):
+        # Iterate through all cookies in the user's request
         for cookie_name, cookie_vale in request.COOKIES.items():
+            # Determine the cookie type (defaults to 'analytics' if unknown)
             cookie_type = COOKIE_TYPE_MAP.get(cookie_name.lower(), CookieType.ANALYTICS)
 
+            # Create a record in the Cookies model for each cookie
             Cookies.object.create(
                 user=request.user,
                 name=cookie_name,
                 value=cookie_vale,
                 cookie_type=cookie_type
             )
+
+    # Return response
     return HttpResponse("Cookies tracked!")
