@@ -444,6 +444,12 @@ def accept_mandatory_only(request):
                 'cookie_selection': CookieConsentType.MANDATORY_ONLY
             }
         )
+        log_action(
+            request=request,
+            action="cookie_consent",
+            status="SUCCESS",
+            user=request.user,
+        )
 
     # Redirect the user back to the page they came from, or home if unavailable
     return redirect(request.META.get('HTTP_REFERER','/'))
