@@ -119,6 +119,7 @@ class LoginAttempts(models.Model):
 class AuditLog(models.Model):
     objects = models.Manager()
     log_id = models.AutoField(primary_key=True)
+    # User that is associated with the action (nullable should the user be unknown)
     user = models.ForeignKey(get_user_model(), null=True, blank=True, on_delete=models.SET_NULL)
     action = models.CharField(max_length=100, choices=AuditAction.choices) # e.g login_attempt, email_verified
     path = models.TextField()
