@@ -10,7 +10,7 @@ These endpoints handle:
 from django.urls import path
 from users.views import (RegisterView, LoginView, LogoutView, VerifyUserView, MFASetupView, VerifyMFAView, MFALoginView,
                          PasswordResetRequestView, PasswordResetConfirmView, get_csrf_token, track_cookies,
-                         give_cookie_consent)
+                         accept_mandatory_only, accept_mandatory_and_analytics)
 
 
 
