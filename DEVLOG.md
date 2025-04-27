@@ -348,6 +348,40 @@ Files Updated:
 - Confirmed session cookies are properly created and deleted.
 
 
+## Date: 27st April 2025 (Noki)
+### Branch(es): Noki-Users-1
+#### Implement Full Cookie Consent Tracking and Storage (Mandatory Only vs Mandatory + Analytics)
+
+##### Add Cookie Model for Tracking:
+  * Created new **Cookie** and **CookieConsent** models to track the user cookies and their consent events.
+    * **Cookie** nodel tracks:
+      * cookie name
+      * cookie_value
+      * cookie_type
+      * lined to the user
+    * **CookieConsent** models tracks:
+      * Whether the user has given consent
+      * Which cookie policy version they have agreed to
+      * Consent Type: Mandatory Only or Mandatory + Analytics
+    * Enforced ForeignKey and One-to-One relations properly for traceability.
+
+##### Add Enums for Cookie Types and Consent Types:
+* Added CookieType Enums in enum.py:
+  * `mandatory`
+  * `analytics`
+* Added CookieConsentType Enums in enum.py:
+  * `mandatory_only`
+  * `mandatory_and_analytics`
+
+##### Add Cookie Type Mapping:
+* Created `COOKIE_TYPE_MAP` dictionary to classify cookies from browser automatically.
+  * Known cookies mapped to their typed.
+  * Cookies mapped:
+    * csrftoken
+    * sessionid
+    * ga
+    * gid
+* Only the cookies listed are saved in the mapping for performance and security purposes.
 
 ##### Create CookieConsent Views:
 * Added two views:
