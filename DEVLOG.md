@@ -230,7 +230,7 @@ Introduced a new model called LoginAttempt to log and audit all user login attem
 * serializers.py
 * views.py (LoginView)
 
-#### Title: Implement Audit Logging & Login Attempt Tracking
+#### Implement Audit Logging & Login Attempt Tracking
 Added a centralized logging system to capture the user actions and detailed login attempts for an improved authentication visibility and auditing.
 ##### Details:
 * Added two models:
