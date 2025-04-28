@@ -216,7 +216,7 @@ Introduced a new model called LoginAttempt to log and audit all user login attem
     * Suspicious login detection
     * Future rate limiting or lockout features (as per the TODO list)
 
-#### Title: Capture Attempts in LoginSerializer Enhanced the Login Process to Track All User Login Attempts Directly Within the LoginSerializer.
+#### Capture Attempts in LoginSerializer Enhanced the Login Process to Track All User Login Attempts Directly Within the LoginSerializer.
 ##### Details:
 * Inside `LoginSerializer.validate()`, we now capture each login attempt and store metadata including:
     * Entered email.
