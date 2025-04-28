@@ -35,6 +35,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
+    #email change
+    pending_email = models.EmailField(blank=True, null=True)
+
     # Login field
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']

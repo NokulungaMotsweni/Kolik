@@ -7,8 +7,9 @@ from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from datetime import timedelta
 User = get_user_model()
-from users.models import UserVerification, VerificationType, LoginAttempts
+from users.models import UserVerification, VerificationType, LoginAttempts, CustomUser
 from users.disposable_domains import DISPOSABLE_DOMAINS
+
 
 
 
@@ -208,4 +209,9 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 
-       
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['name']  # Only allow updating the name
