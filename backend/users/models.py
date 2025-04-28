@@ -127,6 +127,13 @@ class LoginAttempts(models.Model):
     def __str__(self):
         return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
 
+    class Meta:
+        # Index to speed up queries in the common lookup fields
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["email_entered"]),
+        ]
+
 class AuditLog(models.Model):
     """
     Stores Secure Audit Logs.
