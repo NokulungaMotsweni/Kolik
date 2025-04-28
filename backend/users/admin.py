@@ -26,8 +26,8 @@ class CustomUserAdmin(UserAdmin):
 
     # Columns visible in the admin user list
     list_display = (
-        'email', 'name', 'is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled'
-    )
+        'email', 'name', 'is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled',
+        'is_blocked', 'cooldown_until', 'cooldown_strikes', 'login_attempt_count')
     list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled')
     ordering = ('email',)
     search_fields = ('email', 'name')
