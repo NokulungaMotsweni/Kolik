@@ -1,11 +1,13 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+
+from config import settings
 from .managers import CustomUserManager
 import uuid
 import hashlib
 from django.contrib.auth import get_user_model
-from .enums import AuditStatus, AuditAction
+from .enums import AuditStatus, AuditAction, CookieType, CookieConsentType
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -120,8 +122,13 @@ class LoginAttempts(models.Model):
         return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
 
 class AuditLog(models.Model):
+    """
+    Stores Secure Audit Logs.
+    Tracks Login Attempts and Email Verification (for now).
+    """
     objects = models.Manager()
     log_id = models.AutoField(primary_key=True)
+    # User that is associated with the action (nullable should the user be unknown)
     user = models.ForeignKey(get_user_model(), null=True, blank=True, on_delete=models.SET_NULL)
     action = models.CharField(max_length=100, choices=AuditAction.choices) # e.g login_attempt, email_verified
     path = models.TextField()
@@ -131,4 +138,105 @@ class AuditLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
+        """
+        String Representation of AuditLog entry.
+        Returns:
+            - Action
+            - Status
+            - Timestamp
+        """
         return f"{self.action} - {self.status} at {self.timestamp}"
+
+class Cookies(models.Model):
+    """
+    Stores the individual cookies associated with each user.
+    Includes:
+        - Cookie's Purpose
+        - Cookie's Expiration
+        - Security Settings
+        - Name: Type of Cookie
+    """
+
+    # Link to the user; nullable if the user gets deleted
+    objects = models.Manager()
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True)
+
+    # Cookie name (e.g., csrftoken, sessionID)
+    cookie_name = models.CharField(max_length=40)
+
+    # Cookie Value (session token / tracking ID etc.)
+    cookie_value = models.TextField()
+
+    # Cookie type using predefined set of choices
+    cookie_type = models.CharField(max_length=20, choices=CookieType.choices)
+
+    # Domain scope for which the cookie is valid.
+    domain = models.CharField(max_length=255, null=True, blank=True)
+
+    # Path scope for which the cookie is valid
+    path = models.CharField(max_length=255, null=True, blank=True)
+
+    # Cookie expiration datetime
+    expires = models.DateTimeField(blank=True, null=True)
+
+    # If Truem cookie is only sent obly over HTTPS
+    secure = models.BooleanField(default=False)
+
+    # If True, cookie is inaccessible to client-side scripts
+    http_only = models.BooleanField(default=False)
+
+    # Creation date of the cookie record
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        """
+        String Representation of Cookies entry.
+        Returns:
+            - USer's email / Username / Falls back to user ID
+        """
+        identifier = getattr(self.user, 'email', None) or getattr(self.user, 'username', None) or f"User {self.user.id}"
+        return f"{self.cookie_name} ({self.cookie_type}) for {identifier}"
+
+class CookieConsent(models.Model):
+    """
+    Records user's cookie consent decision.
+    Stores:
+        - Consent
+        - Policy Version
+        - Date when it happened
+    """
+    # One-to-one link with the user; each user has exactly one CookieConsent record
+    objects = models.Manager()
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE)
+
+    # Whether consent has been given for cookie usage
+    consent_given = models.BooleanField(default=False)
+
+    # Version of the cookie policy the user agreed to
+    policy_version = models.CharField(max_length=10)
+
+    # Selection of Cookies
+    cookie_selection = models.CharField(
+        max_length=30,
+        choices=CookieConsentType.choices,
+        default=CookieConsentType.MANDATORY_ONLY
+    )
+
+    # timestamp when the consent decision was recorded
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        """
+        Representation of CookieConsent entry.
+        Shows:
+            - Consent: True/False
+            - User's email address
+            - Policy Version
+        """
+        return f"Consent {self.consent_given} for {self.user.email} (v{self.policy_version})"

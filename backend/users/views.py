@@ -4,6 +4,7 @@ import base64
 from io import BytesIO
 from datetime import timedelta
 
+from django.shortcuts import redirect
 # Django core imports
 from django.utils import timezone
 from django.contrib.auth import logout, login, get_user_model
@@ -22,15 +23,15 @@ from rest_framework.permissions import IsAuthenticated
 import pyotp
 import qrcode
 
+from config import settings
 # Project-level imports
 from utils.audit import log_login, log_action, get_login_failure_reason
 from .serializers import RegisterSerializer, LoginSerializer
-from users.models import CustomUser, UserVerification, VerificationType
+from users.models import CustomUser, UserVerification, VerificationType, CookieConsent, Cookies
+from .enums import CookieType, CookieConsentType
 
-
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
-
 User = get_user_model()
 
 
@@ -380,4 +381,116 @@ class PasswordResetConfirmView(APIView):
 
 @ensure_csrf_cookie
 def get_csrf_token(request):
-    return JsonResponse({'message': 'CSRF cookie set'})                       
+    return JsonResponse({'message': 'CSRF cookie set'})
+
+# Map of know cookie names to their type classification
+COOKIE_TYPE_MAP = {
+    'csrftoken': CookieType.MANDATORY,
+    'sessionid': CookieType.MANDATORY,
+    'ga': CookieType.ANALYTICS,
+    'gid': CookieType.ANALYTICS,
+}
+
+def has_user_consented(user):
+    """
+    Checks if the given user has consented to the current cookie policy version.
+    Returns:
+        - True: If consent is given and policy version matches.
+        - False: Treat as non consented.
+    """
+    try:
+        # Fetch user's consent record
+        consent = CookieConsent.objects.get(user=user)
+        # Return True only if consent is given and policy version matches
+        return consent.consent_given and consent.policy_version == settings.COOKIE_POLICY_VERSION
+    except CookieConsent.DoesNotExist:
+        # If no consent record found, treat as not consented.
+        return False
+
+def track_cookies(request):
+    """
+    Track and save cookies for authenticated users who have given consent.
+    """
+    if request.user.is_authenticated and has_user_consented(request.user):
+        # Iterate through all cookies in the user's request
+        consent = CookieConsent.objects.filter(user=request.user).first()
+        if not consent:
+            return HttpResponse("No consent found.")
+
+        for cookie_name, cookie_value in request.COOKIES.items():
+            cookie_name = cookie_name.lower()
+            if cookie_name.lower() in COOKIE_TYPE_MAP:
+                # Determine the cookie type based on the map
+                cookie_type = COOKIE_TYPE_MAP[cookie_name.lower()]
+
+                # Check: if user only accepted mandatory, skip analytics cookies
+                if consent.cookie_selection == CookieConsentType.MANDATORY_ONLY and cookie_type == CookieType.ANALYTICS:
+                    continue  # Skip analytics cookies
+
+                # Create a record in the Cookies model for each cookie
+                Cookies.objects.create(
+                    user=request.user,
+                    name=cookie_name,
+                    value=cookie_value,
+                    cookie_type=cookie_type
+                )
+
+    # Return response, simple HTTP response
+    return HttpResponse("Cookies tracked!")
+
+def accept_mandatory_only(request):
+    """
+    Accept only mandatory cookies for the authenticated user.
+    Update: User's cookie consent record.
+    Logs: Cookie consent action.
+    """
+    if request.user.is_authenticated:
+        # Update or create the user's CookieConsent record
+        CookieConsent.objects.update_or_create(
+            user=request.user,
+            defaults={
+                'consent_given': True,  # User gives consent (for mandatory cookies only)
+                'policy_version': settings.COOKIE_POLICY_VERSION, # Save the current cookie policy version
+                'cookie_selection': CookieConsentType.MANDATORY_ONLY # Show that only mandatory cookies are accepted
+            }
+        )
+
+        # Log cookie consent action
+        log_action(
+            request=request,
+            action="cookie_consent",
+            status="SUCCESS",
+            user=request.user,
+        )
+    # Redirect to the previous page or to homepage of the referrer is missing
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
+def accept_mandatory_and_analytics(request):
+    """
+    Accept both mandatory and analytics cookies for the authenticated user.
+    Update: User's cookie consent record
+    Log: Cookie consent action.
+    """
+    if request.user.is_authenticated:
+        # Update or create the user's CookieConsent record
+        CookieConsent.objects.update_or_create(
+            user=request.user,
+            defaults={
+                # User consents to both mandatory and analytics cookies
+                'consent_given': True,
+                # Save the current cookie policy version
+                'policy_version': settings.COOKIE_POLICY_VERSION,
+                # Indicate full consent for analytics too
+                'cookie_selection': CookieConsentType.MANDATORY_AND_ANALYTICS
+            }
+        )
+
+        # Log the cookie consent action
+        log_action(
+            request=request,
+            action="cookie_consent",
+            status="SUCCESS",
+            user=request.user,
+        )
+    # Redirect to the previous page or to homepage of the referrer is missing
+    return redirect(request.META.get('HTTP_REFERER', '/'))
