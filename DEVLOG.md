@@ -386,8 +386,8 @@ Files Updated:
 * Added two views:
   * `accept_mandatory_only`
   * `accept_mandatory_and_analytics`
-* Users are allowed to chose between acceptiong only essential cookies versus analytical tracking.
-* **Added a mechanism that the frontend can use with thwo buttons in the cookie banner.**
+* Users are allowed to choose between accepting only essential cookies versus analytical tracking.
+* **Added a mechanism that the frontend can use with two buttons in the cookie banner.**
 
 ##### Update the URL for Consent Choices:
 * Added two new paths:
