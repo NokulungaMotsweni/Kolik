@@ -10,7 +10,7 @@ This custom admin panel:
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import CustomUser, UserVerification, LoginAttempts, AuditLog
+from .models import CustomUser, UserVerification, LoginAttempts, AuditLog, IPAddressBan
 
 
 @admin.register(CustomUser)

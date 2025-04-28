@@ -6,6 +6,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from datetime import timedelta
+from users.security import SecurityPolicy
 User = get_user_model()
 from users.models import UserVerification, VerificationType, LoginAttempts
 
@@ -145,26 +146,36 @@ class LoginSerializer(serializers.Serializer):
             )
             raise serializers.ValidationError("Email and Password are Required.")
 
-        # Brute-Force Attack Protection: Check For Recent Failures
-        recent_fails = LoginAttempts.objects.filter(
+        # Find user if exists
+        user = User.objects.filter(email=email).first()
+
+        # Check if IP Blocked
+        if not SecurityPolicy.handle_ip(ip, success=False):
+            raise serializers.ValidationError("Too many failed login attempts. Try again later.")
+
+        # Check User block Pre-Authentication
+        if user:
+            if user.is_blocked:
+                if not user.cooldown_until:
+                    raise serializers.ValidationError("Please Contact Support.")
+                elif user.cooldown_until and user.cooldown_until > timezone.now():
+                    raise serializers.ValidationError("Too many failed login attempts. Try again later.")
+
+        # Log the login attempt BEFORE authentication
+        LoginAttempts.objects.create(
+            user=user if user else None,
             email_entered=email,
             success=False,
-            timestamp__gte=timezone.now() - timedelta(minutes=10)
-        ).count()
+            failure_reason="Pending authentication.",
+            ip_address=ip,
+            device=device
 
-        if recent_fails >= 5:
-            LoginAttempts.objects.create(
-                email_entered=email,
-                success=False,
-                failure_reason="Too many failed attempts",
-                ip_address=ip,
-                device=device
-            )
-            raise serializers.ValidationError("Too many failed login attempts. Try again later.")
+        )
+
         # Authenticate user using Django's auth system
         user = authenticate(username=email, password=password)
 
-        # Login Attempt Case 2: Invalid Credentials
+        # Invalid Credentials
         if not user:
             LoginAttempts.objects.create(
                 email_entered=email,
@@ -175,7 +186,7 @@ class LoginSerializer(serializers.Serializer):
             )
             raise serializers.ValidationError("Invalid Credentials.")
 
-        # Login Attempt Case 3: Account Inactive
+        # Account Inactive
         if not user.is_active:
             LoginAttempts.objects.create(
                 email_entered=email,
@@ -186,7 +197,7 @@ class LoginSerializer(serializers.Serializer):
             )
             raise serializers.ValidationError("Account is Inactive or Not Verified.")
 
-        # Login Attempt Case 4: Success
+        # Success
         LoginAttempts.objects.create(
             email_entered=email,
             success=True,
