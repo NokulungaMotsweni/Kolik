@@ -91,7 +91,7 @@ class LoginView(APIView):
                     "email": user.email
                 }, status=status.HTTP_200_OK)
 
-            # MFA is enabled → Require second step
+            # MFA is enabled and second step is required
             log_login(request, email=email, success=True, user=user)
             return Response({
                 "mfa_required": True,
@@ -584,7 +584,7 @@ class ChangePasswordView(APIView):
         user.set_password(new_password)
         user.save()
 
-        # ⚡ Return secure message (so user understands they must re-login)
+        # Return secure message (so user understands they must re-login)
         return Response({
             "message": "Password updated successfully. Please log in again with your new password."
         }, status=status.HTTP_200_OK)
