@@ -253,3 +253,32 @@ class CookieConsent(models.Model):
             - Policy Version
         """
         return f"Consent {self.consent_given} for {self.user.email} (v{self.policy_version})"
+
+
+class IPAddressBan(models.Model):
+    """
+    Tracks IP Addresses that are temporarily/permanently banned due to excessive failed login attempts.
+    """
+    objects = models.Manager()
+
+    # Tracked IP Address, Unique
+    ip_address = models.GenericIPAddressField(unique=True)
+
+    # Number of failed login attempts
+    login_attempt_count = models.IntegerField(default=0)
+
+    # Optional timestamp until which IP is blocked; Null: No temporary block
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    # If IP Address is permanently/temporarily blocked
+    is_blocked = models.BooleanField(default=False)
+
+    # Timestamp of the last login attempt from this IP Address
+    last_attempt = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        """
+                Returns:
+                     Readable string representation of the IP address status.
+                """
+        return f"IP {self.ip_address} - {'Blocked' if self.is_blocked else 'Active'}"
