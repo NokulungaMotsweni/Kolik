@@ -135,7 +135,7 @@ class LoginSerializer(serializers.Serializer):
         ip = self.context['request'].META.get('REMOTE_ADDR')
         device = self.context['request'].META.get('HTTP_USER_AGENT', 'Unknown')
 
-        # Login Attempt Case 1: Missing credentials
+        #  Missing credentials
         if not email or not password:
             LoginAttempts.objects.create(
                 email_entered=email or "",
@@ -147,23 +147,23 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email and Password are Required.")
 
         # Find user if exists
-        user = User.objects.filter(email=email).first()
+        user_lookup = User.objects.filter(email=email).first()
 
         # Check if IP Blocked
         if not SecurityPolicy.handle_ip(ip, success=False):
             raise serializers.ValidationError("Too many failed login attempts. Try again later.")
 
         # Check User block Pre-Authentication
-        if user:
-            if user.is_blocked:
-                if not user.cooldown_until:
+        if user_lookup:
+            if user_lookup.is_blocked:
+                if not user_lookup.cooldown_until:
                     raise serializers.ValidationError("Please Contact Support.")
-                elif user.cooldown_until and user.cooldown_until > timezone.now():
+                elif user_lookup.cooldown_until and user_lookup.cooldown_until > timezone.now():
                     raise serializers.ValidationError("Too many failed login attempts. Try again later.")
 
         # Log the login attempt BEFORE authentication
         LoginAttempts.objects.create(
-            user=user if user else None,
+            user=user_lookup if user_lookup else None,
             email_entered=email,
             success=False,
             failure_reason="Pending authentication.",
@@ -184,6 +184,11 @@ class LoginSerializer(serializers.Serializer):
                 ip_address=ip,
                 device=device
             )
+            if user_lookup:
+                SecurityPolicy.handle_user_login_attempts(
+                    user=user_lookup,
+                    success=False
+            )
             raise serializers.ValidationError("Invalid Credentials.")
 
         # Account Inactive
@@ -195,14 +200,24 @@ class LoginSerializer(serializers.Serializer):
                 ip_address=ip,
                 device=device
             )
+            SecurityPolicy.handle_user_login_attempts(
+                user=user,
+                success=False
+            )
             raise serializers.ValidationError("Account is Inactive or Not Verified.")
 
-        # Success
+        # Successful Login
         LoginAttempts.objects.create(
             email_entered=email,
             success=True,
             ip_address=ip,
             device=device
+        )
+        SecurityPolicy.handle_ip(ip, success=True)
+
+        SecurityPolicy.handle_user_login_attempts(
+            user=user,
+            success=True,
         )
 
         # Attach the user to validated data for use in the view
