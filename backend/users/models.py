@@ -39,6 +39,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
 
+    # Field For Rate Limiting
+    login_attempt_count = models.IntegerField(default=0)
+    last_failed_login = models.DateTimeField(null=True, blank=True)
+    cooldown_until = models.DateTimeField(null=True, blank=True)
+    cooldown_strikes = models.IntegerField(default=0) # Number of Cooldowns
+
     objects = CustomUserManager()
 
     def __str__(self):
