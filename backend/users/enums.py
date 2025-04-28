@@ -10,6 +10,12 @@ class AuditAction(models.TextChoices):
     MFA_VERIFIED = "mfa_verified", "MFA Verified"
     MFA_LOGIN = "mfa_login", "MFA Login"
 
+    # For Security
+    USER_TEMP_BLOCKED = "user_temp_blocked", "User Temporarily Blocked"
+    USER_PERMANENTLY_BLOCKED = "user_permanently_blocked", "User Permanently Blocked"
+    IP_BLOCKED = "ip_blocked", "IP Blocked"
+    RATE_LIMIT_TRIGGERED = "rate_limit_triggered", "Rate Limit Triggered"
+
 class AuditStatus(models.TextChoices):
     SUCCESS = "SUCCESS", "Success"
     FAILED = "FAILED", "Failed"
