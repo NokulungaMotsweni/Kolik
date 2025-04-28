@@ -234,7 +234,7 @@ Introduced a new model called LoginAttempt to log and audit all user login attem
 Added a centralized logging system to capture the user actions and detailed login attempts for an improved authentication visibility and auditing.
 ##### Details:
 * Added two models:
-    * *AuditLog* — logs all of the general user actions like login, logout and verification (has room for expansion if needed).
+    * *AuditLog* — logs all the general user actions like login, logout and verification (has room for expansion if needed).
     * *LoginAttempts* — tracks login-specific data including:
         * Entered email (whether it is an active user or not).
         * Success status (boolean).
