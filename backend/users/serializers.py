@@ -8,19 +8,21 @@ from django.contrib.auth import get_user_model
 from datetime import timedelta
 User = get_user_model()
 from users.models import UserVerification, VerificationType, LoginAttempts
+from users.disposable_domains import DISPOSABLE_DOMAINS
 
 
 
 """
-RegisterSerializer for Kolik 
+RegisterSerializer for Kolik
 
 Handles:
-- Email, phone, password collection
-- Password confirmation
+- Email, name, password collection
+- Password confirmation check
 - Password strength validation (capital, number, symbol, etc.)
-- Timestamps for T&C consent
-- User marked inactive until phone/email verification is complete
-- User Verification
+- Disposable email domain protection (blocks temporary email services)
+- Timestamps for Terms & Privacy Policy consent
+- User created as inactive until email verification is completed
+- Automatic UserVerification token generation for email activation
 """
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
@@ -31,7 +33,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True},
         }
-
+    def validate_email(self, value):
+        """
+        Checks if the email domain is not disposable.
+        """
+        domain = value.split('@')[-1].lower()
+        if domain in DISPOSABLE_DOMAINS:
+            raise serializers.ValidationError("Disposable email addresses are not allowed.")
+        return value
     def validate_password(self, value):
         """
         Enforces password security using both Django validators and
