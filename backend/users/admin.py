@@ -92,3 +92,15 @@ class AuditLogAdmin(admin.ModelAdmin):
     search_fields = ('user__email', 'action', 'path', 'device')
     readonly_fields = ('timestamp',)
     date_hierarchy = 'timestamp'
+
+@admin.register(IPAddressBan)
+class IPBanAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the IPAddressBan model.
+    Displays IP Address Ban information.
+    List is Filtered by blocked status.
+    """
+    list_display = ('ip_address', 'is_blocked', 'login_attempt_count', 'blocked_until')
+    search_fields = ('ip_address',)
+    list_filter = ('is_blocked',)
+
