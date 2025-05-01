@@ -32,6 +32,12 @@ from users.serializers import LoginSerializer, ProfileUpdateSerializer, Register
 from users.enums import CookieConsentType, CookieType
 
 
+import requests
+from django.shortcuts import redirect, render
+from django.http import HttpResponse
+from django.conf import settings
+
+
 User = get_user_model()
 
 
@@ -722,3 +728,11 @@ class ConfirmEmailChangeView(APIView):
         log_action(request, action="confirm_email_change", status="SUCCESS", user=user)
 
         return Response({"message": "Email updated successfully. Please verify your new email address."}, status=status.HTTP_200_OK)                
+
+
+
+
+
+
+
+

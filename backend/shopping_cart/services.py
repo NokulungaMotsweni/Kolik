@@ -1,15 +1,5 @@
-"""
-Business logic for the shopping cart app.
-
-This module contains core price comparison logic:
-- Calculates the total basket cost per supermarket
-- Uses the cheapest variant of each product in the basket
-- Identifies the overall cheapest supermarket
-"""
-
 from decimal import Decimal
 from products.models import GenericProduct, ProductVariant
-
 
 def calculate_total_per_supermarket(basket):
     """
@@ -49,7 +39,7 @@ def calculate_total_per_supermarket(basket):
         # Find the cheapest variant per supermarket
         cheapest_by_market = {}
         for variant in variants:
-            market = variant.supermarket.cookie_name
+            market = variant.supermarket.name  # ✅ FIXED here
             price = Decimal(variant.price)
 
             if market not in cheapest_by_market or price < cheapest_by_market[market].price:
