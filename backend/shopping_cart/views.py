@@ -1,12 +1,13 @@
 """
-API views for the 'shopping_cart' app.
+API view for calculating total basket cost per supermarket.
 
-This module provides a single endpoint for:
-- Accepting a user's basket (list of product IDs and quantities)
-- Calculating total cost per supermarket
-- Identifying the cheapest option
+This endpoint accepts a list of products and their quantities,
+calculates total prices at different supermarkets, and returns
+the cheapest option.
 
-Accessible via both GET (instructions) and POST (calculation).
+Accessible via:
+- GET: Returns usage instructions.
+- POST: Processes basket and returns pricing results.
 """
 
 from rest_framework.decorators import api_view
@@ -25,17 +26,17 @@ def calculate_basket(request):
                     {"product_id": 3, "quantity": 1}
                 ]
             },
-            "instructions": "Send a POST request to this endpoint with JSON like the above to calculate basket price."
+            "instructions": "Send a POST request with JSON like the example to calculate your basket price."
         })
 
-    # VALIDATION with BasketSerializer
+    # Validate basket structure
     serializer = BasketSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     basket = serializer.validated_data["basket"]
 
-    # Business logic
+    # Perform pricing calculation
     results, cheapest = calculate_total_per_supermarket(basket)
 
     if isinstance(results, dict) and "error" in results:
@@ -44,4 +45,4 @@ def calculate_basket(request):
     return Response({
         "results": results,
         "cheapest_supermarket": cheapest
-    })
+    }, status=status.HTTP_200_OK)

@@ -32,6 +32,12 @@ from users.serializers import LoginSerializer, ProfileUpdateSerializer, Register
 from users.enums import CookieConsentType, CookieType
 
 
+import requests
+from django.shortcuts import redirect, render
+from django.http import HttpResponse
+from django.conf import settings
+
+
 User = get_user_model()
 
 
@@ -677,11 +683,12 @@ class RequestEmailChangeView(APIView):
 
 
 
+
+
 class ConfirmEmailChangeView(APIView):
     """
     Confirms the email change request using the token.
     """
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -691,7 +698,6 @@ class ConfirmEmailChangeView(APIView):
         if not token:
             return Response({"error": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Hash the token
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
         try:
@@ -708,10 +714,10 @@ class ConfirmEmailChangeView(APIView):
         if not user.pending_email:
             return Response({"error": "No pending email change found."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update email
+        # Update email and reset verification status
         user.email = user.pending_email
         user.pending_email = None
-        user.is_email_verified = False  # Require re-verification of new email
+        user.is_email_verified = False
         user.save()
 
         # Mark token as used
@@ -719,6 +725,43 @@ class ConfirmEmailChangeView(APIView):
         verification.verified_at = timezone.now()
         verification.save()
 
+        # Automatically generate new email verification token
+        verification_type, _ = VerificationType.objects.get_or_create(
+            name="Email",
+            defaults={"requires_token": True, "expires_on": timedelta(minutes=30)}
+        )
+
+        # Invalidate any previous tokens of this type
+        UserVerification.objects.filter(
+            user=user,
+            verification_type=verification_type,
+            is_latest=True
+        ).update(is_latest=False)
+
+        # Create a new token
+        new_verification = UserVerification.objects.create(
+            user=user,
+            verification_type=verification_type,
+            expires_at=timezone.now() + verification_type.expires_on,
+            is_latest=True
+        )
+
+        raw_token = new_verification.generate_token()
+        new_verification.save()
+
+        # TEMP: print the new token until frontend email system is integrated
+        print("NEW EMAIL VERIFICATION TOKEN:", raw_token)
+
         log_action(request, action="confirm_email_change", status="SUCCESS", user=user)
 
-        return Response({"message": "Email updated successfully. Please verify your new email address."}, status=status.HTTP_200_OK)                
+        return Response({
+            "message": "Email updated successfully. Please verify your new email address."
+        }, status=status.HTTP_200_OK)                
+
+
+
+
+
+
+
+
