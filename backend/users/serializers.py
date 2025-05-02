@@ -67,7 +67,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             # Run Django password validator
             validate_password(value)
         except DjangoValidationError as e:
-            raise serializers.ValidationError(e.messages)
+            errors.extend(e.messages)
 
         # Custom rules (with expressive messages)
         if len(value) < 10:
