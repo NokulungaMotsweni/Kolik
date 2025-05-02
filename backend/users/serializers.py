@@ -37,8 +37,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value):
         """
-        Enforces password security using both Django validators and
-        custom complexity rules (uppercase, lowercase, number, special char).
+        Validates password strength via Django's validator alongside custom rules.
+        If validation fails, logs attempt with failure reason and raises a serialiser error.
+
+        Args;
+            value (str): Password.
+
+        Returns:
+            str: Validated password if all checks passed.
+
+        Raises:
+            serializers.ValidationError: If password fails the built-in/custom validation rules.
         """
         try:
             validate_password(value)
