@@ -281,6 +281,9 @@ class IPAddressBan(models.Model):
     # Number of failed login attempts
     login_attempt_count = models.IntegerField(default=0)
 
+    # Number of failed signup attempts
+    signup_attempt_count = models.IntegerField(default=0)
+
     # Optional timestamp until which IP is blocked; Null: No temporary block
     blocked_until = models.DateTimeField(null=True, blank=True)
 
