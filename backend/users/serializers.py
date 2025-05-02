@@ -10,9 +10,7 @@ from django.contrib.auth import get_user_model
 from datetime import timedelta
 from users.security import SecurityPolicy
 User = get_user_model()
-from users.models import UserVerification, VerificationType, LoginAttempts
-
-
+from users.models import UserVerification, VerificationType, LoginAttempts, SignUpAttempts, SignupFailureReason
 
 """
 RegisterSerializer for Kolik 
