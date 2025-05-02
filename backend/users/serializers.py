@@ -202,15 +202,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             device=device
         )
 
-        # Log success to AuditLog
-        AuditLog.objects.create(
-            user=user,
-            action="signup_successful",
-            status="SUCCESS",
-            path=request.path if request else "/register/",
-            ip_address=ip_address,
-            device=device
-        )
+        # Log success to log_action
+        if request:
+            log_action(
+                request=request,
+                action=AuditAction.SIGNUP_SUCCESSFUL,
+                status="SUCCESS",
+                user=user
+            )
 
         return user
 
