@@ -55,21 +55,21 @@ class RegisterSerializer(serializers.ModelSerializer):
         if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
             errors.append("Add at least one special character like ! @ # $ to strengthen your password.")
 
-            # If the password has failed the minimum requirements, log and raise
-            if errors:
-                SignUpAttempts.objects.create(
-                    email_entered=email,
-                    success=False,
-                    failure_reason=SignupFailureReason.PASSWORD_TOO_WEAK,
-                    ip_address=ip_address,
-                    device=device
-                )
-                raise serializers.ValidationError({
-                    "password": [
-                        "Your password doesn't meet the minimum security requirements:",
-                        *errors
-                    ]
-                })
+        # If the password has failed the minimum requirements, log and raise
+        if errors:
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.PASSWORD_TOO_WEAK,
+                ip_address=ip_address,
+                device=device
+            )
+            raise serializers.ValidationError({
+                "password": [
+                    "Your password doesn't meet the minimum security requirements:",
+                    *errors
+                ]
+            })
 
         return value
 
