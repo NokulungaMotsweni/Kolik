@@ -17,6 +17,8 @@ class SecurityPolicy:
     MAX_LOGIN_ATTEMPTS_USER = 5
     MAX_COOLDOWN_STRIKES = 3
     USER_BAN_PERIOD = timedelta(minutes=15)
+
+    #IP Based Login Attempts
     MAX_LOGIN_ATTEMPTS_IP = 5
     IP_BAN_PERIOD = timedelta(minutes=30)
 
