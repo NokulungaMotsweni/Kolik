@@ -34,3 +34,11 @@ class CookieType(models.TextChoices):
 class CookieConsentType(models.TextChoices):
     MANDATORY_ONLY = 'mandatory_only', 'Mandatory Only'
     MANDATORY_AND_ANALYTICS = 'mandatory_and_analytics', 'Mandatory and Analytics'
+
+class SignupFailureReason(models.TextChoices):
+    EMAIL_ALREADY_EXISTS = "email_already_exists", "Email already exists"
+    BLOCKED_IP = "blocked_ip", "IP address is blocked"
+    RATE_LIMITED = "rate_limited", "Rate limited"
+    PASSWORD_TOO_WEAK = "password_too_weak", "Password too weak"
+    MISMATCHED_PASSWORDS = "mismatched_passwords", "Passwords do not match"
+    UNKNOWN = "unknown", "Unknown error"
