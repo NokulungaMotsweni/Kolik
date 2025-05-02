@@ -1,37 +1,43 @@
 # Standard library imports
-import hashlib
 import base64
-from io import BytesIO
+import hashlib
 from datetime import timedelta
+from io import BytesIO
+import re
 
-from django.shortcuts import redirect
 # Django core imports
-from django.utils import timezone
-from django.contrib.auth import logout, login, get_user_model
-from django.views.decorators.csrf import csrf_protect
-from django.utils.decorators import method_decorator
-from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.shortcuts import redirect
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 
 # Django REST Framework imports
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 # Third-party packages
 import pyotp
 import qrcode
 
-from config import settings
 # Project-level imports
-from utils.audit import log_login, log_action, get_login_failure_reason
-from .serializers import RegisterSerializer, LoginSerializer
-from users.models import CustomUser, UserVerification, VerificationType, CookieConsent, Cookies
-from .enums import CookieType, CookieConsentType
+from config import settings
+from utils.audit import get_login_failure_reason, log_action, log_login
+from users.models import CookieConsent, Cookies, CustomUser, UserVerification, VerificationType
+from users.serializers import LoginSerializer, ProfileUpdateSerializer, RegisterSerializer
+from users.enums import CookieConsentType, CookieType
 
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import ensure_csrf_cookie
+
+import requests
+from django.shortcuts import redirect, render
+from django.http import HttpResponse
+from django.conf import settings
+
+
 User = get_user_model()
 
 
@@ -91,7 +97,7 @@ class LoginView(APIView):
                     "email": user.email
                 }, status=status.HTTP_200_OK)
 
-            # MFA is enabled → Require second step
+            # MFA is enabled and second step is required
             log_login(request, email=email, success=True, user=user)
             return Response({
                 "mfa_required": True,
@@ -494,3 +500,268 @@ def accept_mandatory_and_analytics(request):
         )
     # Redirect to the previous page or to homepage of the referrer is missing
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+
+
+
+
+class ProfileView(APIView):
+    """
+    View and update basic user profile information (name).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "name": user.name,
+            "email": user.email,
+            "mfa_enabled": user.mfa_enabled,
+        }, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        user = request.user
+        serializer = ProfileUpdateSerializer(user, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+class ChangePasswordView(APIView):
+    """
+    Allows a logged-in user to change their password.
+    Requires:
+    - Current password
+    - New password
+    - Confirm new password
+    - MFA Code
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        confirm_new_password = request.data.get('confirm_new_password')
+        mfa_code = request.data.get('mfa_code')
+
+        # Validate all fields are present
+        if not all([current_password, new_password, confirm_new_password, mfa_code]):
+            return Response({"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check MFA code
+        if not user.mfa_secret or not user.mfa_enabled:
+            return Response({"error": "MFA not set up."}, status=status.HTTP_403_FORBIDDEN)
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if not totp.verify(mfa_code):
+            return Response({"error": "Invalid MFA code."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check current password
+        if not user.check_password(current_password):
+            return Response({"error": "Current password is incorrect."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check if new passwords match
+        if new_password != confirm_new_password:
+            return Response({"error": "New passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Custom password strength checks
+        if len(new_password) < 10:
+            return Response({"error": "Password must be at least 10 characters long."}, status=status.HTTP_400_BAD_REQUEST)
+        if not re.search(r"[A-Z]", new_password):
+            return Response({"error": "Password must include at least one uppercase letter."}, status=status.HTTP_400_BAD_REQUEST)
+        if not re.search(r"[a-z]", new_password):
+            return Response({"error": "Password must include at least one lowercase letter."}, status=status.HTTP_400_BAD_REQUEST)
+        if not re.search(r"\d", new_password):
+            return Response({"error": "Password must include at least one number."}, status=status.HTTP_400_BAD_REQUEST)
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_password):
+            return Response({"error": "Password must include at least one special character."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # All checks passed → Update password
+        user.set_password(new_password)
+        user.save()
+
+        # Return secure message (so user understands they must re-login)
+        return Response({
+            "message": "Password updated successfully. Please log in again with your new password."
+        }, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+class RequestEmailChangeView(APIView):
+    """
+    Allows a logged-in user to request an email change.
+    Requires:
+    - Current password
+    - New email address
+    - MFA code
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        current_password = request.data.get("current_password")
+        new_email = request.data.get("new_email")
+        mfa_code = request.data.get("mfa_code")
+
+        # Validate all fields
+        if not all([current_password, new_email, mfa_code]):
+            return Response({"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check MFA
+        if not user.mfa_secret or not user.mfa_enabled:
+            return Response({"error": "MFA not set up."}, status=status.HTTP_403_FORBIDDEN)
+
+        totp = pyotp.TOTP(user.mfa_secret)
+        if not totp.verify(mfa_code):
+            return Response({"error": "Invalid MFA code."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Check current password
+        if not user.check_password(current_password):
+            return Response({"error": "Current password is incorrect."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Validate new email
+        if User.objects.filter(email=new_email).exists():
+            return Response({"error": "This email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", new_email):
+            return Response({"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save the pending email
+        user.pending_email = new_email
+        user.save()
+
+        # Create a token for email change verification
+        verification_type, _ = VerificationType.objects.get_or_create(
+            name="Email Change",
+            defaults={"requires_token": True, "expires_on": timedelta(minutes=30)}
+        )
+
+        # Invalidate previous email change tokens
+        UserVerification.objects.filter(
+            user=user,
+            verification_type=verification_type,
+            is_latest=True
+        ).update(is_latest=False)
+
+        # Create new verification
+        verification = UserVerification.objects.create(
+            user=user,
+            verification_type=verification_type,
+            expires_at=timezone.now() + verification_type.expires_on,
+            is_latest=True
+        )
+
+        raw_token = verification.generate_token()
+        verification.save()
+
+        # TEMP: Print the token (in the future: send email!)
+        print("EMAIL CHANGE TOKEN:", raw_token)
+
+        log_action(request, action="request_email_change", status="SUCCESS", user=user)
+
+        return Response({"message": "Verification token has been generated. Please confirm to complete email change."}, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
+
+
+class ConfirmEmailChangeView(APIView):
+    """
+    Confirms the email change request using the token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        token = request.data.get("token")
+
+        if not token:
+            return Response({"error": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+        try:
+            verification = UserVerification.objects.get(token_hash=token_hash, is_latest=True)
+        except UserVerification.DoesNotExist:
+            return Response({"error": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if verification.expires_at < timezone.now():
+            return Response({"error": "Token has expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if verification.user != user:
+            return Response({"error": "Token does not belong to the current user."}, status=status.HTTP_403_FORBIDDEN)
+
+        if not user.pending_email:
+            return Response({"error": "No pending email change found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update email and reset verification status
+        user.email = user.pending_email
+        user.pending_email = None
+        user.is_email_verified = False
+        user.save()
+
+        # Mark token as used
+        verification.is_verified = True
+        verification.verified_at = timezone.now()
+        verification.save()
+
+        # Automatically generate new email verification token
+        verification_type, _ = VerificationType.objects.get_or_create(
+            name="Email",
+            defaults={"requires_token": True, "expires_on": timedelta(minutes=30)}
+        )
+
+        # Invalidate any previous tokens of this type
+        UserVerification.objects.filter(
+            user=user,
+            verification_type=verification_type,
+            is_latest=True
+        ).update(is_latest=False)
+
+        # Create a new token
+        new_verification = UserVerification.objects.create(
+            user=user,
+            verification_type=verification_type,
+            expires_at=timezone.now() + verification_type.expires_on,
+            is_latest=True
+        )
+
+        raw_token = new_verification.generate_token()
+        new_verification.save()
+
+        # TEMP: print the new token until frontend email system is integrated
+        print("NEW EMAIL VERIFICATION TOKEN:", raw_token)
+
+        log_action(request, action="confirm_email_change", status="SUCCESS", user=user)
+
+        return Response({
+            "message": "Email updated successfully. Please verify your new email address."
+        }, status=status.HTTP_200_OK)                
+
+
+
+
+
+
+
+

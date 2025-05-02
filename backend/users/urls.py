@@ -10,7 +10,7 @@ These endpoints handle:
 from django.urls import path
 from users.views import (RegisterView, LoginView, LogoutView, VerifyUserView, MFASetupView, VerifyMFAView, MFALoginView,
                          PasswordResetRequestView, PasswordResetConfirmView, get_csrf_token, track_cookies,
-                         accept_mandatory_only, accept_mandatory_and_analytics)
+                         accept_mandatory_only, accept_mandatory_and_analytics, ProfileView, ChangePasswordView, RequestEmailChangeView, ConfirmEmailChangeView,)
 
 
 
@@ -29,4 +29,8 @@ urlpatterns = [
     path('accept-mandatory/', accept_mandatory_only, name='accept_mandatory'),
     path('accept-mandatory-analytics/', accept_mandatory_and_analytics, name='accept_mandatory_analytics'),
     path("api/auth/track-cookies/", track_cookies, name="track-cookies"),
+    path('profile/', ProfileView.as_view(), name='profile'),
+    path('profile/change-password/', ChangePasswordView.as_view(), name='change-password'),
+    path('profile/request-email-change/', RequestEmailChangeView.as_view(), name='request-email-change'),
+    path('profile/confirm-email-change/', ConfirmEmailChangeView.as_view(), name='confirm-email-change'),
 ]

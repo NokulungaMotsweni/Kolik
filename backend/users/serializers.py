@@ -14,19 +14,31 @@ from users.security import SecurityPolicy
 from utils.audit import log_action
 
 User = get_user_model()
-from users.models import UserVerification, VerificationType, LoginAttempts, SignUpAttempts, SignupFailureReason, \
-    AuditLog
+from users.models import (
+    UserVerification,
+    VerificationType,
+    LoginAttempts,
+    SignUpAttempts,
+    SignupFailureReason,
+    AuditLog,
+    CustomUser,
+)
+
+from users.models import UserVerification, VerificationType, LoginAttempts, CustomUser
+from users.disposable_domains import DISPOSABLE_DOMAINS
+
 
 """
-RegisterSerializer for Kolik 
+RegisterSerializer for Kolik
 
 Handles:
-- Email, phone, password collection
-- Password confirmation
+- Email, name, password collection
+- Password confirmation check
 - Password strength validation (capital, number, symbol, etc.)
-- Timestamps for T&C consent
-- User marked inactive until phone/email verification is complete
-- User Verification
+- Disposable email domain protection (blocks temporary email services)
+- Timestamps for Terms & Privacy Policy consent
+- User created as inactive until email verification is completed
+- Automatic UserVerification token generation for email activation
 """
 GENERIC_SIGNUP_ERROR = "Signup failed. Please try again later."
 
@@ -39,7 +51,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True},
         }
-
+    def validate_email(self, value):
+        """
+        Checks if the email domain is not disposable.
+        """
+        domain = value.split('@')[-1].lower()
+        if domain in DISPOSABLE_DOMAINS:
+            raise serializers.ValidationError("Disposable email addresses are not allowed.")
+        return value
     def validate_password(self, value):
         """
         Validates password strength via Django's validator alongside custom rules.
@@ -334,4 +353,9 @@ class LoginSerializer(serializers.Serializer):
         return data
 
 
-       
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['name']  # Only allow updating the name

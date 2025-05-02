@@ -1,77 +1,79 @@
-"""
-Django settings for the Kolik backend project.
+from decouple import config  # .env config
+from pathlib import Path
+from django.utils.translation import gettext_lazy as _
 
-This configuration file defines the core setup of the Django backend,
-including installed apps, database settings, middleware, static/media paths,
-internationalization, and REST framework integration.
-
-Sensitive values (e.g., SECRET_KEY) are stored securely in a .env file.
-"""
-
-from decouple import config  # .env file
-from pathlib import Path  # Manages file system paths
-from django.utils.translation import gettext_lazy as _  # Translation
-
-# Base directory of the project 
+# ========================
+# BASE DIRECTORY
+# ========================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+# ========================
 # SECURITY SETTINGS
-SECRET_KEY = config('SECRET_KEY')  
-DEBUG = config('DEBUG', cast=bool)  # Enable debug mode in development only!
-ALLOWED_HOSTS = []  # We have to add domain names or IPs before deploying to production
+# ========================
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', cast=bool)
+ALLOWED_HOSTS = []
 
-
+# ========================
 # INSTALLED APPLICATIONS
+# ========================
 INSTALLED_APPS = [
-    'django.contrib.admin',           # Django admin site
-    'django.contrib.auth',            # Authentication system
-    'django.contrib.contenttypes',    # Handles content types
-    'django.contrib.sessions',        # Session framework
-    'django.contrib.messages',        # Messaging framework
-    'django.contrib.staticfiles',     # Serves static files (CSS, JS)
-    
-    # Third-party apps
-    'rest_framework',                 # Django REST Framework for building APIs
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+
+    # Third-party
+    'rest_framework',
+    'corsheaders',
 
     # Local apps
-    'users',                          # Handles authentication and user management
-    'products',                       # Product catalog, comparisons
-    'shopping_cart',                  # Shopping cart and basket logic
+    'users',
+    'products',
+    'shopping_cart',
 ]
 
-
-# MIDDLEWARE CONFIGURATION
+# ========================
+# MIDDLEWARE
+# ========================
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',  # Security enhancements
-    'django.contrib.sessions.middleware.SessionMiddleware',  # Session handling
-    'django.middleware.common.CommonMiddleware',  # General request/response handling
-    'django.middleware.csrf.CsrfViewMiddleware',  # CSRF protection
-    'django.contrib.auth.middleware.AuthenticationMiddleware',  # Authentication handling
-    'django.contrib.messages.middleware.MessageMiddleware',  # Messaging support
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Prevents clickjacking
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',   
+    'middleware.geolocation_middleware.GeolocationMiddleware', 
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# ========================
+# URLS & WSGI
+# ========================
+ROOT_URLCONF = 'config.urls'
+WSGI_APPLICATION = 'config.wsgi.application'
 
-# URL AND WSGI CONFIG
-ROOT_URLCONF = 'config.urls'  # Project-level URL configuration
-WSGI_APPLICATION = 'config.wsgi.application'  # WSGI entry point for deployment
-
-
-# DATABASE CONFIGURATION
+# ========================
+# DATABASE (DEV ONLY)
+# ========================
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',  # Default dev database, later on we will move to postgres for deployment
+        'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
+# ========================
+# CUSTOM USER MODEL
+# ========================
+AUTH_USER_MODEL = 'users.CustomUser'
 
-# AUTHENTICATION SETTINGS
-AUTH_USER_MODEL = 'users.CustomUser'  # Use custom user model from `users` app
-
-
-# PASSWORD VALIDATION
+# ========================
+# PASSWORD VALIDATORS
+# ========================
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -79,32 +81,32 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
-# INTERNATIONALIZATION
-LANGUAGE_CODE = 'en-us'  # Default language
-
+# ========================
+# LOCALIZATION
+# ========================
+LANGUAGE_CODE = 'en-us'
 LANGUAGES = [
     ('en', _('English')),
-    ('cs', _('Czech')),  # Added czech
+    ('cs', _('Czech')),
 ]
-
 TIME_ZONE = 'Europe/Prague'
-USE_I18N = True  # Enable translation engine
-USE_TZ = True    # Store datetimes in UTC
+USE_I18N = True
+USE_TZ = True
 
+# ========================
+# STATIC & MEDIA
+# ========================
+STATIC_URL = 'static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-# STATIC AND MEDIA FILES
-STATIC_URL = 'static/'  # URL path to serve static files
-
-MEDIA_URL = '/media/'  # URL path to serve media files (uploaded)
-MEDIA_ROOT = BASE_DIR / 'media'  # Where uploaded files are stored
-
-
-# TEMPLATES CONFIGURATION
+# ========================
+# TEMPLATES
+# ========================
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  
+        'DIRS': [BASE_DIR / 'config' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -117,35 +119,30 @@ TEMPLATES = [
     },
 ]
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# DEFAULTS
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  # Default for model primary keys
-
-
-
-# --- CORS + CSRF for Frontend Integration ---
-
-# Required apps
-INSTALLED_APPS += ['corsheaders']
-
-# CorsMiddleware must be at the top
-MIDDLEWARE.insert(0, 'corsheaders.middleware.CorsMiddleware')
-
-# Allow cookies to be sent (for session login)
+# ========================
+# CORS / CSRF (Frontend)
+# ========================
 CORS_ALLOW_CREDENTIALS = True
-
-# Allow only the local frontend during development
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
-
-# CSRF protection settings
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
+CSRF_COOKIE_HTTPONLY = False
 
-# Allow React frontend to read CSRF cookie for login
-CSRF_COOKIE_HTTPONLY = False  # must be False so frontend can access it
+# ========================
+# GEOLOCATION & VPN CONFIG
+# ========================
+MAXMIND_DB_PATH = BASE_DIR / 'data' / 'GeoLite2-Country.mmdb'
+IPINFO_TOKEN = config("IPINFO_TOKEN")
+PROXYCHECK_KEY = config("PROXYCHECK_KEY")
+REDIRECT_URL = "https://www.visitczechia.com"
+DEBUG_IP_OVERRIDE = config("DEBUG_IP_OVERRIDE", default=None)
 
-# The version of the Cookie Policy
+# ========================
+# POLICY VERSIONING
+# ========================
 COOKIE_POLICY_VERSION = "1.0"
