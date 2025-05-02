@@ -184,6 +184,25 @@ class RegisterSerializer(serializers.ModelSerializer):
         # TEMPORARY FOR DEV/TESTING (REMOVE BEFORE PROD)
         print("Verification Token: ", raw_token)
 
+        # Log success to SignupAttempt
+        SignUpAttempts.objects.create(
+            email_entered=user.email,
+            success=True,
+            failure_reason=None,
+            ip_address=ip_address,
+            device=device
+        )
+
+        # Log success to AuditLog
+        AuditLog.objects.create(
+            user=user,
+            action="signup_successful",
+            status="SUCCESS",
+            path=request.path if request else "/register/",
+            ip_address=ip_address,
+            device=device
+        )
+
         return user
 
 
