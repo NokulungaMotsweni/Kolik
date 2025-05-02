@@ -139,6 +139,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 device=device
             )
             raise serializers.ValidationError("Passwords do not match.")
+
         return data
 
     def create(self, validated_data):
