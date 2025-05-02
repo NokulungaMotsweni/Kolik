@@ -8,9 +8,14 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from datetime import timedelta
+
+from users.enums import AuditAction
 from users.security import SecurityPolicy
+from utils.audit import log_action
+
 User = get_user_model()
-from users.models import UserVerification, VerificationType, LoginAttempts, SignUpAttempts, SignupFailureReason
+from users.models import UserVerification, VerificationType, LoginAttempts, SignUpAttempts, SignupFailureReason, \
+    AuditLog
 
 """
 RegisterSerializer for Kolik 

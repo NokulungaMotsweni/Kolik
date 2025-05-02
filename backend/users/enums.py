@@ -9,6 +9,7 @@ class AuditAction(models.TextChoices):
     MFA_SETUP_STARTED = "mfa_setup_started", "MFA Setup Started"
     MFA_VERIFIED = "mfa_verified", "MFA Verified"
     MFA_LOGIN = "mfa_login", "MFA Login"
+    SIGNUP_SUCCESSFUL = "signup_successful", "Signup Successful"
 
     # For Security
     USER_TEMP_BLOCKED = "user_temp_blocked", "User Temporarily Blocked"
