@@ -133,3 +133,58 @@ class SecurityPolicy:
                 )
         ip_record.save()
         return True
+
+    @staticmethod
+    def handle_signup_ip(ip_address, success):
+
+        """
+        Handles and logs all user sign up attempts, updating IP-Based signup attempt records.
+
+        Tracks the number of failed signup attempts from a given IP Address.
+        Should the nuber of failed attempts exceed the allowed threshold, the IP is blocked for the specified duration.
+
+        Args:
+            ip_address: The IP Address attempting signup. Must have an `ip_address` attribute.
+            success: True if the signup attempt succeeded, False otherwise.
+
+        Returns:
+            bool: False if the IP is currently blocked and the block period is still active.
+                True otherwise (after updating attempt counters).
+        """
+        now_time = now()
+
+        # Retrieve/Create an IPAddressBan record for the given IP address
+        ip_record, _ = IPAddressBan.objects.get_or_create(ip_address=ip_address)
+
+        # Deny signup if IP is currently blocked and still within the block duration
+        if ip_record.is_blocked and ip_record.blocked_until and ip_record.blocked_until > now_time:
+            return False
+
+        if success:
+            # Reset counters and unblock IP on successful signup
+            ip_record.signup_attempt_count = 0
+            ip_record.is_blocked = False
+            ip_record.blocked_until = None
+        else:
+            # Increment failed signup attempt count and update the last attempt
+            ip_record.signup_attempt_count += 1
+            ip_record.last_attempt = now_time
+
+            # Block IP if maximum failed attempts exceeded
+            if ip_record.signup_attempt_count >= SecurityPolicy.MAX_SIGNUP_ATTEMPTS_IP:
+                ip_record.is_blocked = True
+                ip_record.blocked_until = now_time + SecurityPolicy.SIGNUP_BAN_PERIOD
+
+                # Log the blocking event
+                AuditLog.objects.create(
+                    user=None,
+                    action='ip_blocked_signup',
+                    path='/register/',
+                    ip_address=ip_address,
+                    status='FAILED',
+                    device=''
+                )
+
+            # Save the updated IP record
+            ip_record.save()
+            return True
