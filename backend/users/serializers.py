@@ -43,17 +43,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.messages)
 
-            # Custom rules (with expressive messages)
-            if len(value) < 10:
-                errors.append("Make sure your password is at least 10 characters long to keep your account safe.")
-            if not re.search(r"[A-Z]", value):
-                errors.append("Add at least one uppercase letter (A–Z) to your password.")
-            if not re.search(r"[a-z]", value):
-                errors.append("Include at least one lowercase letter (a–z) in your password.")
-            if not re.search(r"\d", value):
-                errors.append("Include at least one number (0–9) in your password.")
-            if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
-                errors.append("Add at least one special character like ! @ # $ to strengthen your password.")
+        # Custom rules (with expressive messages)
+        if len(value) < 10:
+            errors.append("Make sure your password is at least 10 characters long to keep your account safe.")
+        if not re.search(r"[A-Z]", value):
+            errors.append("Add at least one uppercase letter (A–Z) to your password.")
+        if not re.search(r"[a-z]", value):
+            errors.append("Include at least one lowercase letter (a–z) in your password.")
+        if not re.search(r"\d", value):
+            errors.append("Include at least one number (0–9) in your password.")
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+            errors.append("Add at least one special character like ! @ # $ to strengthen your password.")
 
             # If the password has failed the minimum requirements, log and raise
             if errors:
