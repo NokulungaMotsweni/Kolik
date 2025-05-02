@@ -12,6 +12,8 @@ class SecurityPolicy:
     - USER_BAN_PERIOD: Duration of temporary user ban.
     - MAX_LOGIN_ATTEMPTS_IP: Failed IP login attempts before blocking IP.
     - IP_BAN_PERIOD: Duration of IP address block.
+    - MAX_SIGNUP_ATTEMPTS_IP: Allowed IP login attempts before cooldown/ban.
+    - SIGNUP_BAN_PERIOD: Duration of IP address block.
     """
     # User Based Login Attempts
     MAX_LOGIN_ATTEMPTS_USER = 5
