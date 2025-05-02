@@ -144,8 +144,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """
-        Creates a new user. The account is inactive by default and awaits
-        email verification. Consent timestamps are stored.
+        Creates a new user.
+        The account is inactive by default and awaits email verification.
+        Consent timestamps are stored.
+        logs successful creation.
         """
 
         # AuditLogs Variables
