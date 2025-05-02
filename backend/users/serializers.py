@@ -49,6 +49,20 @@ class RegisterSerializer(serializers.ModelSerializer):
         Raises:
             serializers.ValidationError: If password fails the built-in/custom validation rules.
         """
+
+        request = self.context.get('request')
+
+        # Extract IP (X-Forwarded-For if behind proxy)
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+
+        # Extrac device/user-agent info
+        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+
+        # Get email from initial data
+        email = self.initial_data.get("email", "unknown")
+
+        errors = []
+
         try:
             validate_password(value)
         except DjangoValidationError as e:
