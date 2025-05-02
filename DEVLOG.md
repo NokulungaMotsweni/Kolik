@@ -417,3 +417,33 @@ Files Updated:
 * urls: New routing for consent actions
 * utiles/audit.py: Used existing log_action for consent events.
 * Cookie banner template (updated to offer Accept Mandatory vs Accept All)
+
+## Date: 2nd May 2025 (Noki)
+### Branches: Noki-Users-1
+#### Implement Signup Attempt Logging and Audit Trail for User Registration
+
+##### Add **SignupAttempt** Model to Logging Flow:
+* Centralised the logging of the signup attempts. Failed and successful.
+* Recorded Metadata
+  * `email_entered`: Email
+  * `success`: Flag
+  * `failure_reason`: Enum
+* Successful login logged in create() after user created and verification started.
+* Uses log_action for consistency
+
+##### Ensure Unit Test Coverage for Signup Validation:
+* Added direct unit test for `RegisterSerializer` (API endpoint could be added to replace).
+* Used `APIRequestFactory` to simulate `request` context for logging.
+* Verified that weak passwords trigger the correct validation errors.
+* Confirmed logging behavior for failed signup attempts functions as expected.
+
+#### Files Created/Updated:
+* `models.py`
+  * Integrated **SignUpAttempts** into serialiser logic.
+* `enums.py`
+  * Added **SignupFailureReason**
+  * Added `AuditAction.SIGNUP_SUCCESSFUL`
+* `serializers.py`
+  * Updated **RegisterSerializer** `.validate()` and `.create()`
+* `tests.py`
+  * Added serializer test for password rejection/acceptance.
