@@ -105,6 +105,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
        # Validates that password and confirm_password fields match.
         if data['password'] != data['confirm_password']:
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.MISMATCHED_PASSWORDS,
+                ip_address=ip_address,
+                device=device
+            )
             raise serializers.ValidationError("Passwords do not match.")
         return data
 
