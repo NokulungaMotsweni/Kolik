@@ -74,9 +74,36 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        """
-        Validates that password and confirm_password fields match.
-        """
+        request = self.context.get('request')
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        email = data.get('email')
+
+        # IP-Level Security Check
+        ip_allowed = SecurityPolicy.handle_signup_ip(ip_address, success=False)
+        if not ip_allowed:
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.BLOCKED_IP,
+                ip_address=ip_address,
+                device=device
+            )
+            raise serializers.ValidationError(GENERIC_SIGNUP_ERROR)
+
+        # Duplicate email
+        if User.objects.filter(email__iexact=email).exists():
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.EMAIL_ALREADY_EXISTS,
+                ip_address=ip_address,
+                device=device
+            )
+            raise serializers.ValidationError(GENERIC_SIGNUP_ERROR)
+
+
+       # Validates that password and confirm_password fields match.
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError("Passwords do not match.")
         return data
