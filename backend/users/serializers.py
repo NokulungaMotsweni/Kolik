@@ -23,6 +23,8 @@ Handles:
 - User marked inactive until phone/email verification is complete
 - User Verification
 """
+GENERIC_SIGNUP_ERROR = "Signup failed. Please try again later."
+
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
 
