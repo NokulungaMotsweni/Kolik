@@ -13,6 +13,7 @@ class SecurityPolicy:
     - MAX_LOGIN_ATTEMPTS_IP: Failed IP login attempts before blocking IP.
     - IP_BAN_PERIOD: Duration of IP address block.
     """
+    # User Based Login Attempts
     MAX_LOGIN_ATTEMPTS_USER = 5
     MAX_COOLDOWN_STRIKES = 3
     USER_BAN_PERIOD = timedelta(minutes=15)
