@@ -148,6 +148,42 @@ class LoginAttempts(models.Model):
             models.Index(fields=["email_entered"]),
         ]
 
+class SignUpAttempts(models.Model):
+    """
+    Logs each user signup attempt.
+    Includes:
+    - Whether it was successful or not.
+    - IP Address of signup attempt.
+    - Other relevant metadata.
+    """
+    objects = models.Manager()
+    email_entered = models.CharField(max_length=50) # Email address used for sign up
+
+    # Indicated whether the signup was successful
+    success = models.BooleanField()
+
+    # Failure Reason if Applicable
+    failure_reason = models.CharField(
+        max_length=50,
+        choices=SignupFailureReason.choices,
+        null=True,
+        blank=True
+    )
+    ip_address = models.GenericIPAddressField() # Signin attempt IP Address
+    device = models.TextField(max_length=45, null=True, blank=True) # Device/User agent info, optional
+    timestamp = models.DateTimeField(auto_now_add=True) # When the signup attempt occurred
+
+    def __str__(self):
+        return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
+
+    class Meta:
+        # Add indexes to improve query performance for common lookup fields
+        indexes = [
+            models.Index(fields=["email_entered"]),
+            models.Index(fields=["ip_address"]),
+        ]
+
+
 class AuditLog(models.Model):
     """
     Stores Secure Audit Logs.
