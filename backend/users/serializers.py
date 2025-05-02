@@ -64,6 +64,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         errors = []
 
         try:
+            # Run Django password validator
             validate_password(value)
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.messages)
