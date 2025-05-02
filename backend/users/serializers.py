@@ -147,6 +147,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         Creates a new user. The account is inactive by default and awaits
         email verification. Consent timestamps are stored.
         """
+
+        # AuditLogs Variables
+        request = self.context.get("request")
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[
+            0].strip() if request else "unknown"
+        device = request.META.get("HTTP_USER_AGENT", "unknown") if request else "unknown"
+
         validated_data.pop('confirm_password')
 
         # Create Inactive User Awaiting Email Verification
