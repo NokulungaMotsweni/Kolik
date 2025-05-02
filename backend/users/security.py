@@ -20,6 +20,11 @@ class SecurityPolicy:
     MAX_LOGIN_ATTEMPTS_IP = 5
     IP_BAN_PERIOD = timedelta(minutes=30)
 
+    # Sign Up Attempts
+    MAX_SIGNUP_ATTEMPTS_IP = 5
+    SIGNUP_BAN_PERIOD = timedelta(minutes=15)
+
+
     @staticmethod
     def handle_user_login_attempts(user, success):
         """
