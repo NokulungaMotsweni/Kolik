@@ -78,12 +78,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         """
 
         request = self.context.get('request')
+        ip_address = "unknown"
+        device = "unknown"
 
-        # Extract IP (X-Forwarded-For if behind proxy)
-        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
-
-        # Extrac device/user-agent info
-        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        if request:
+            ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+            device = request.META.get('HTTP_USER_AGENT', 'Unknown')
 
         # Get email from initial data
         email = self.initial_data.get("email", "unknown")
@@ -128,8 +128,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context.get('request')
-        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
-        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        ip_address = "unknown"
+        device = "unknown"
+
+        if request:
+            ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+            device = request.META.get('HTTP_USER_AGENT', 'Unknown')
         email = data.get('email')
 
         # IP-Level Security Check
