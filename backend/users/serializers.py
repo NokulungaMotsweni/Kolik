@@ -15,11 +15,12 @@ from utils.audit import log_action
 
 
 User = get_user_model()
+
 from users.models import (
     UserVerification,
     VerificationType,
     LoginAttempts,
-    SignupAttempts,
+    SignUpAttempts,
     SignupFailureReason,
     AuditLog,
     CustomUser,
