@@ -7,7 +7,7 @@ from .managers import CustomUserManager
 import uuid
 import hashlib
 from django.contrib.auth import get_user_model
-from .enums import AuditStatus, AuditAction, CookieType, CookieConsentType
+from .enums import AuditStatus, AuditAction, CookieType, CookieConsentType, SignupFailureReason
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -41,6 +41,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # Login field
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
+
+    # Field For Rate Limiting
+    login_attempt_count = models.IntegerField(default=0)
+    last_failed_login = models.DateTimeField(null=True, blank=True)
+    cooldown_until = models.DateTimeField(null=True, blank=True)
+    cooldown_strikes = models.IntegerField(default=0) # Number of Cooldowns
 
     objects = CustomUserManager()
 
@@ -113,16 +119,73 @@ class LoginAttempts(models.Model):
     - timestamp: Auto-Filled with The Current Time
     """
     objects = models.Manager() # Explicitly defined for PyCharm code completion
+
+    # User associated with attempt (if identifiable); Nullable
     user = models.ForeignKey(get_user_model(), null=True, on_delete=models.SET_NULL)
+
+    # Email address entered during login attempt
     email_entered = models.CharField(max_length=50)
+
+    # If the login is successful or not
     success = models.BooleanField()
+
+    # Login failure reason, if applicable
     failure_reason = models.TextField(null=True, blank=True)
+
+    # IP address from which login was attempted
     ip_address = models.GenericIPAddressField()
+
+    # Optional device info
     device = models.TextField(max_length=45, null=True, blank=True)
+
+    # Auto capture of the timestamp when login was attempted
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
+
+    class Meta:
+        # Index to speed up queries in the common lookup fields
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["email_entered"]),
+        ]
+
+class SignUpAttempts(models.Model):
+    """
+    Logs each user signup attempt.
+    Includes:
+    - Whether it was successful or not.
+    - IP Address of signup attempt.
+    - Other relevant metadata.
+    """
+    objects = models.Manager()
+    email_entered = models.CharField(max_length=50) # Email address used for sign up
+
+    # Indicated whether the signup was successful
+    success = models.BooleanField()
+
+    # Failure Reason if Applicable
+    failure_reason = models.CharField(
+        max_length=50,
+        choices=SignupFailureReason.choices,
+        null=True,
+        blank=True
+    )
+    ip_address = models.GenericIPAddressField() # Signin attempt IP Address
+    device = models.TextField(max_length=45, null=True, blank=True) # Device/User agent info, optional
+    timestamp = models.DateTimeField(auto_now_add=True) # When the signup attempt occurred
+
+    def __str__(self):
+        return f"{self.email_entered} - {'Success' if self.success else 'Failed'} at {self.timestamp}"
+
+    class Meta:
+        # Add indexes to improve query performance for common lookup fields
+        indexes = [
+            models.Index(fields=["email_entered"]),
+            models.Index(fields=["ip_address"]),
+        ]
+
 
 class AuditLog(models.Model):
     """
@@ -243,3 +306,35 @@ class CookieConsent(models.Model):
             - Policy Version
         """
         return f"Consent {self.consent_given} for {self.user.email} (v{self.policy_version})"
+
+
+class IPAddressBan(models.Model):
+    """
+    Tracks IP Addresses that are temporarily/permanently banned due to excessive failed login attempts.
+    """
+    objects = models.Manager()
+
+    # Tracked IP Address, Unique
+    ip_address = models.GenericIPAddressField(unique=True)
+
+    # Number of failed login attempts
+    login_attempt_count = models.IntegerField(default=0)
+
+    # Number of failed signup attempts
+    signup_attempt_count = models.IntegerField(default=0)
+
+    # Optional timestamp until which IP is blocked; Null: No temporary block
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    # If IP Address is permanently/temporarily blocked
+    is_blocked = models.BooleanField(default=False)
+
+    # Timestamp of the last login attempt from this IP Address
+    last_attempt = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        """
+                Returns:
+                     Readable string representation of the IP address status.
+                """
+        return f"IP {self.ip_address} - {'Blocked' if self.is_blocked else 'Active'}"

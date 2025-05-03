@@ -10,7 +10,7 @@ This custom admin panel:
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import CustomUser, UserVerification, LoginAttempts, AuditLog
+from .models import CustomUser, UserVerification, LoginAttempts, AuditLog, IPAddressBan
 
 
 @admin.register(CustomUser)
@@ -26,8 +26,8 @@ class CustomUserAdmin(UserAdmin):
 
     # Columns visible in the admin user list
     list_display = (
-        'email', 'name', 'is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled'
-    )
+        'email', 'name', 'is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled',
+        'is_blocked', 'cooldown_until', 'cooldown_strikes', 'login_attempt_count')
     list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_email_verified', 'mfa_enabled')
     ordering = ('email',)
     search_fields = ('email', 'name')
@@ -92,3 +92,15 @@ class AuditLogAdmin(admin.ModelAdmin):
     search_fields = ('user__email', 'action', 'path', 'device')
     readonly_fields = ('timestamp',)
     date_hierarchy = 'timestamp'
+
+@admin.register(IPAddressBan)
+class IPBanAdmin(admin.ModelAdmin):
+    """
+    Admin configuration for the IPAddressBan model.
+    Displays IP Address Ban information.
+    List is Filtered by blocked status.
+    """
+    list_display = ('ip_address', 'is_blocked', 'login_attempt_count', 'blocked_until')
+    search_fields = ('ip_address',)
+    list_filter = ('is_blocked',)
+

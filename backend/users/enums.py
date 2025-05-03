@@ -9,6 +9,13 @@ class AuditAction(models.TextChoices):
     MFA_SETUP_STARTED = "mfa_setup_started", "MFA Setup Started"
     MFA_VERIFIED = "mfa_verified", "MFA Verified"
     MFA_LOGIN = "mfa_login", "MFA Login"
+    SIGNUP_SUCCESSFUL = "signup_successful", "Signup Successful"
+
+    # For Security
+    USER_TEMP_BLOCKED = "user_temp_blocked", "User Temporarily Blocked"
+    USER_PERMANENTLY_BLOCKED = "user_permanently_blocked", "User Permanently Blocked"
+    IP_BLOCKED = "ip_blocked", "IP Blocked"
+    RATE_LIMIT_TRIGGERED = "rate_limit_triggered", "Rate Limit Triggered"
 
 class AuditStatus(models.TextChoices):
     SUCCESS = "SUCCESS", "Success"
@@ -28,3 +35,11 @@ class CookieType(models.TextChoices):
 class CookieConsentType(models.TextChoices):
     MANDATORY_ONLY = 'mandatory_only', 'Mandatory Only'
     MANDATORY_AND_ANALYTICS = 'mandatory_and_analytics', 'Mandatory and Analytics'
+
+class SignupFailureReason(models.TextChoices):
+    EMAIL_ALREADY_EXISTS = "email_already_exists", "Email already exists"
+    BLOCKED_IP = "blocked_ip", "IP address is blocked"
+    RATE_LIMITED = "rate_limited", "Rate limited"
+    PASSWORD_TOO_WEAK = "password_too_weak", "Password too weak"
+    MISMATCHED_PASSWORDS = "mismatched_passwords", "Passwords do not match"
+    UNKNOWN = "unknown", "Unknown error"

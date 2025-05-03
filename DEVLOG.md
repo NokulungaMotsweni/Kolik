@@ -216,7 +216,7 @@ Introduced a new model called LoginAttempt to log and audit all user login attem
     * Suspicious login detection
     * Future rate limiting or lockout features (as per the TODO list)
 
-#### Title: Capture Attempts in LoginSerializer Enhanced the Login Process to Track All User Login Attempts Directly Within the LoginSerializer.
+#### Capture Attempts in LoginSerializer Enhanced the Login Process to Track All User Login Attempts Directly Within the LoginSerializer.
 ##### Details:
 * Inside `LoginSerializer.validate()`, we now capture each login attempt and store metadata including:
     * Entered email.
@@ -230,11 +230,11 @@ Introduced a new model called LoginAttempt to log and audit all user login attem
 * serializers.py
 * views.py (LoginView)
 
-#### Title: Implement Audit Logging & Login Attempt Tracking
+#### Implement Audit Logging & Login Attempt Tracking
 Added a centralized logging system to capture the user actions and detailed login attempts for an improved authentication visibility and auditing.
 ##### Details:
 * Added two models:
-    * *AuditLog* — logs all of the general user actions like login, logout and verification (has room for expansion if needed).
+    * *AuditLog* — logs all the general user actions like login, logout and verification (has room for expansion if needed).
     * *LoginAttempts* — tracks login-specific data including:
         * Entered email (whether it is an active user or not).
         * Success status (boolean).
@@ -386,8 +386,8 @@ Files Updated:
 * Added two views:
   * `accept_mandatory_only`
   * `accept_mandatory_and_analytics`
-* Users are allowed to chose between acceptiong only essential cookies versus analytical tracking.
-* **Added a mechanism that the frontend can use with thwo buttons in the cookie banner.**
+* Users are allowed to choose between accepting only essential cookies versus analytical tracking.
+* **Added a mechanism that the frontend can use with two buttons in the cookie banner.**
 
 ##### Update the URL for Consent Choices:
 * Added two new paths:
@@ -417,3 +417,33 @@ Files Updated:
 * urls: New routing for consent actions
 * utiles/audit.py: Used existing log_action for consent events.
 * Cookie banner template (updated to offer Accept Mandatory vs Accept All)
+
+## Date: 2nd May 2025 (Noki)
+### Branches: Noki-Users-1
+#### Implement Signup Attempt Logging and Audit Trail for User Registration
+
+##### Add **SignupAttempt** Model to Logging Flow:
+* Centralised the logging of the signup attempts. Failed and successful.
+* Recorded Metadata
+  * `email_entered`: Email
+  * `success`: Flag
+  * `failure_reason`: Enum
+* Successful login logged in create() after user created and verification started.
+* Uses log_action for consistency
+
+##### Ensure Unit Test Coverage for Signup Validation:
+* Added direct unit test for `RegisterSerializer` (API endpoint could be added to replace).
+* Used `APIRequestFactory` to simulate `request` context for logging.
+* Verified that weak passwords trigger the correct validation errors.
+* Confirmed logging behavior for failed signup attempts functions as expected.
+
+#### Files Created/Updated:
+* `models.py`
+  * Integrated **SignUpAttempts** into serialiser logic.
+* `enums.py`
+  * Added **SignupFailureReason**
+  * Added `AuditAction.SIGNUP_SUCCESSFUL`
+* `serializers.py`
+  * Updated **RegisterSerializer** `.validate()` and `.create()`
+* `tests.py`
+  * Added serializer test for password rejection/acceptance.

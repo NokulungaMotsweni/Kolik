@@ -1,4 +1,6 @@
 import re
+from django.contrib.messages import success
+from django.template.context_processors import request
 from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -6,9 +8,24 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from datetime import timedelta
+
+from users.enums import AuditAction
+from users.security import SecurityPolicy
+from utils.audit import log_action
+
+
 User = get_user_model()
-from users.models import UserVerification, VerificationType, LoginAttempts, CustomUser
+from users.models import (
+    UserVerification,
+    VerificationType,
+    LoginAttempts,
+    SignupAttempts,
+    SignupFailureReason,
+    AuditLog,
+    CustomUser,
+)
 from users.disposable_domains import DISPOSABLE_DOMAINS
+
 
 
 
@@ -25,6 +42,8 @@ Handles:
 - User created as inactive until email verification is completed
 - Automatic UserVerification token generation for email activation
 """
+GENERIC_SIGNUP_ERROR = "Signup failed. Please try again later."
+
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True)
 
@@ -44,41 +63,125 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
     def validate_password(self, value):
         """
-        Enforces password security using both Django validators and
-        custom complexity rules (uppercase, lowercase, number, special char).
+        Validates password strength via Django's validator alongside custom rules.
+        If validation fails, logs attempt with failure reason and raises a serialiser error.
+
+        Args;
+            value (str): Password.
+
+        Returns:
+            str: Validated password if all checks passed.
+
+        Raises:
+            serializers.ValidationError: If password fails the built-in/custom validation rules.
         """
+
+        request = self.context.get('request')
+
+        # Extract IP (X-Forwarded-For if behind proxy)
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+
+        # Extrac device/user-agent info
+        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+
+        # Get email from initial data
+        email = self.initial_data.get("email", "unknown")
+
+        errors = []
+
         try:
+            # Run Django password validator
             validate_password(value)
         except DjangoValidationError as e:
-            raise serializers.ValidationError(e.messages)
+            errors.extend(e.messages)
 
-        # Custom password validation rules
+        # Custom rules (with expressive messages)
         if len(value) < 10:
-            raise serializers.ValidationError("Password must be at least 10 characters long.")
+            errors.append("Make sure your password is at least 10 characters long to keep your account safe.")
         if not re.search(r"[A-Z]", value):
-            raise serializers.ValidationError("Password must include at least one uppercase letter.")
+            errors.append("Add at least one uppercase letter (A–Z) to your password.")
         if not re.search(r"[a-z]", value):
-            raise serializers.ValidationError("Password must include at least one lowercase letter.")
+            errors.append("Include at least one lowercase letter (a–z) in your password.")
         if not re.search(r"\d", value):
-            raise serializers.ValidationError("Password must include at least one number.")
+            errors.append("Include at least one number (0–9) in your password.")
         if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
-            raise serializers.ValidationError("Password must include at least one special character.")
+            errors.append("Add at least one special character like ! @ # $ to strengthen your password.")
+
+        # If the password has failed the minimum requirements, log and raise
+        if errors:
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.PASSWORD_TOO_WEAK,
+                ip_address=ip_address,
+                device=device
+            )
+            raise serializers.ValidationError({
+                "password": [
+                    "Your password doesn't meet the minimum security requirements:",
+                    *errors
+                ]
+            })
 
         return value
 
     def validate(self, data):
-        """
-        Validates that password and confirm_password fields match.
-        """
+        request = self.context.get('request')
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        email = data.get('email')
+
+        # IP-Level Security Check
+        ip_allowed = SecurityPolicy.handle_signup_ip(ip_address, success=False)
+        if not ip_allowed:
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.BLOCKED_IP,
+                ip_address=ip_address,
+                device=device
+            )
+            raise serializers.ValidationError(GENERIC_SIGNUP_ERROR)
+
+        # Duplicate email
+        if User.objects.filter(email__iexact=email).exists():
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.EMAIL_ALREADY_EXISTS,
+                ip_address=ip_address,
+                device=device
+            )
+            raise serializers.ValidationError(GENERIC_SIGNUP_ERROR)
+
+
+       # Validates that password and confirm_password fields match.
         if data['password'] != data['confirm_password']:
+            SignUpAttempts.objects.create(
+                email_entered=email,
+                success=False,
+                failure_reason=SignupFailureReason.MISMATCHED_PASSWORDS,
+                ip_address=ip_address,
+                device=device
+            )
             raise serializers.ValidationError("Passwords do not match.")
+
         return data
 
     def create(self, validated_data):
         """
-        Creates a new user. The account is inactive by default and awaits
-        email verification. Consent timestamps are stored.
+        Creates a new user.
+        The account is inactive by default and awaits email verification.
+        Consent timestamps are stored.
+        logs successful creation.
         """
+
+        # AuditLogs Variables
+        request = self.context.get("request")
+        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[
+            0].strip() if request else "unknown"
+        device = request.META.get("HTTP_USER_AGENT", "unknown") if request else "unknown"
+
         validated_data.pop('confirm_password')
 
         # Create Inactive User Awaiting Email Verification
@@ -116,6 +219,24 @@ class RegisterSerializer(serializers.ModelSerializer):
         # TEMPORARY FOR DEV/TESTING (REMOVE BEFORE PROD)
         print("Verification Token: ", raw_token)
 
+        # Log success to SignupAttempt
+        SignUpAttempts.objects.create(
+            email_entered=user.email,
+            success=True,
+            failure_reason=None,
+            ip_address=ip_address,
+            device=device
+        )
+
+        # Log success to log_action
+        if request:
+            log_action(
+                request=request,
+                action=AuditAction.SIGNUP_SUCCESSFUL,
+                status="SUCCESS",
+                user=user
+            )
+
         return user
 
 
@@ -144,7 +265,7 @@ class LoginSerializer(serializers.Serializer):
         ip = self.context['request'].META.get('REMOTE_ADDR')
         device = self.context['request'].META.get('HTTP_USER_AGENT', 'Unknown')
 
-        # Login Attempt Case 1: Missing credentials
+        #  Missing credentials
         if not email or not password:
             LoginAttempts.objects.create(
                 email_entered=email or "",
@@ -155,26 +276,36 @@ class LoginSerializer(serializers.Serializer):
             )
             raise serializers.ValidationError("Email and Password are Required.")
 
-        # Brute-Force Attack Protection: Check For Recent Failures
-        recent_fails = LoginAttempts.objects.filter(
+        # Find user if exists
+        user_lookup = User.objects.filter(email=email).first()
+
+        # Check if IP Blocked
+        if not SecurityPolicy.handle_ip(ip, success=False):
+            raise serializers.ValidationError("Too many failed login attempts. Try again later.")
+
+        # Check User block Pre-Authentication
+        if user_lookup:
+            if user_lookup.is_blocked:
+                if not user_lookup.cooldown_until:
+                    raise serializers.ValidationError("Please Contact Support.")
+                elif user_lookup.cooldown_until and user_lookup.cooldown_until > timezone.now():
+                    raise serializers.ValidationError("Too many failed login attempts. Try again later.")
+
+        # Log the login attempt BEFORE authentication
+        LoginAttempts.objects.create(
+            user=user_lookup if user_lookup else None,
             email_entered=email,
             success=False,
-            timestamp__gte=timezone.now() - timedelta(minutes=10)
-        ).count()
+            failure_reason="Pending authentication.",
+            ip_address=ip,
+            device=device
 
-        if recent_fails >= 5:
-            LoginAttempts.objects.create(
-                email_entered=email,
-                success=False,
-                failure_reason="Too many failed attempts",
-                ip_address=ip,
-                device=device
-            )
-            raise serializers.ValidationError("Too many failed login attempts. Try again later.")
+        )
+
         # Authenticate user using Django's auth system
         user = authenticate(username=email, password=password)
 
-        # Login Attempt Case 2: Invalid Credentials
+        # Invalid Credentials
         if not user:
             LoginAttempts.objects.create(
                 email_entered=email,
@@ -183,9 +314,14 @@ class LoginSerializer(serializers.Serializer):
                 ip_address=ip,
                 device=device
             )
+            if user_lookup:
+                SecurityPolicy.handle_user_login_attempts(
+                    user=user_lookup,
+                    success=False
+            )
             raise serializers.ValidationError("Invalid Credentials.")
 
-        # Login Attempt Case 3: Account Inactive
+        # Account Inactive
         if not user.is_active:
             LoginAttempts.objects.create(
                 email_entered=email,
@@ -194,14 +330,24 @@ class LoginSerializer(serializers.Serializer):
                 ip_address=ip,
                 device=device
             )
+            SecurityPolicy.handle_user_login_attempts(
+                user=user,
+                success=False
+            )
             raise serializers.ValidationError("Account is Inactive or Not Verified.")
 
-        # Login Attempt Case 4: Success
+        # Successful Login
         LoginAttempts.objects.create(
             email_entered=email,
             success=True,
             ip_address=ip,
             device=device
+        )
+        SecurityPolicy.handle_ip(ip, success=True)
+
+        SecurityPolicy.handle_user_login_attempts(
+            user=user,
+            success=True,
         )
 
         # Attach the user to validated data for use in the view
