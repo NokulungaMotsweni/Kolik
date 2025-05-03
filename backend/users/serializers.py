@@ -13,19 +13,21 @@ from users.enums import AuditAction
 from users.security import SecurityPolicy
 from utils.audit import log_action
 
+
 User = get_user_model()
 from users.models import (
     UserVerification,
     VerificationType,
     LoginAttempts,
-    SignUpAttempts,
+    SignupAttempts,
     SignupFailureReason,
     AuditLog,
     CustomUser,
 )
-
-from users.models import UserVerification, VerificationType, LoginAttempts, CustomUser
 from users.disposable_domains import DISPOSABLE_DOMAINS
+
+
+
 
 
 """
