@@ -5,6 +5,7 @@ from django.utils import timezone
 from config import settings
 from .managers import CustomUserManager
 import uuid
+from datetime import timedelta
 import hashlib
 from django.contrib.auth import get_user_model
 from .enums import AuditStatus, AuditAction, CookieType, CookieConsentType, SignupFailureReason
@@ -73,18 +74,30 @@ class UserVerification(models.Model):
     expires_at = models.DateTimeField()
     attempt_number = models.IntegerField(default=0)
     is_latest = models.BooleanField(default=True)
-    objects: models.Manager['UserVerification'] = models.Manager()
+
+    objects = models.Manager()
 
     def generate_token(self):
         """
         Generates a New Unhashed Token and Stores the SHA256 Hash of the Token.
-
         Returns:
-            str: The unhashed SHA256 Hash of the Token is Sent to The User.
+            str: The raw token (to be sent to the user).
         """
         raw_token = str(uuid.uuid4())
+
+        # Mark previous tokens for this user/type as not latest
+        UserVerification.objects.filter(
+            user=self.user,
+            verification_type=self.verification_type,
+            is_latest=True
+        ).update(is_latest=False)
+
         self.token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+        self.is_latest = True
+        self.save()
+
         return raw_token
+
 
 # Model to Represent the Verification Method Type, Whether it Requires a Token and the Duration of the Token
 class VerificationType(models.Model):
