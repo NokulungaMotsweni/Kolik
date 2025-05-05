@@ -26,4 +26,11 @@ class ShoppingCart(models.Model):
     # Timestamp - When the shopping cart was created
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        # String representation for admin/shell debugging
+        return f"ShoppingCart for {self.user}"
+
+
+
+
 # Create your models here.
