@@ -447,3 +447,98 @@ Files Updated:
   * Updated **RegisterSerializer** `.validate()` and `.create()`
 * `tests.py`
   * Added serializer test for password rejection/acceptance.
+
+
+## Date: 3 & 4th May 2025 (Noki)
+### Branches: Noki-Users-1
+#### Implement Core Backend Logic for Supermarket Cart Comparison and Pricing Flow
+
+##### Models & Seed Data Foundation:
+* Confirmed and validated models for:
+  * `Category`, `GenericProduct`, `ProductVariant`, `Supermarket`.
+  * `ShoppingCart`, `CartItem` with `locked` variant support.
+* Reviewed sample seed data script covering real product and variant entries across Tesco, Billa, Albert.
+* Implemented the `locked` logic in `CartItem`:
+  * If `locked=True`, user wants exact variant.
+  * If `False`, variant can be swapped.
+* Added the unit support anf naming conventions for product comparisons.
+
+##### Services Layer Re-Architecture:
+* Replaced `calculate_total_per_supermarket()` with `analyze_basket_pricing(basket)`.
+  * Returns:
+    * `products`
+    * `supermarket_totals`
+    * `best_mixed_basket`
+    * `warnings`
+  * Automatically removes duplicates `product_id` entries and combines quantities.
+* Implemented optional warnings for missing products/variants without breaking structure.
+* Added:
+  * `compare_supermarkets(basket)`
+  * `get_mixed_basket(basket)`
+  * `find_cheapest_supermarket(...)`
+  * `find_cheapest_supermarket_name(...)` removed after consolidating output.
+  * `get_breakdown_for_supermarket(...)` store-specific pricing + missing items
+* Final output returns:
+  * `products`
+  * `supermarket_totals`
+  * `best_mixed_basket`
+  * `warnings` 
+
+##### Cart Management Service Logic:
+* Cleaned up:
+  * `add_to_cart(user, product_id, variant_id, quantity, locked=True)`
+    * Uses `update_or_create` on `(cart, variant)` for consistent behaviour with `unique_together.`
+  * `remove_from_cart(user, product_id)` [under review]
+* Added:
+  * `get_user_cart_items(user)` → raw product and quantity input for analysis.
+  * `get_user_cart_summary(user)` → frontend-friendly summary with variant and lock state
+
+##### Pricing Logic Features:
+* Mixed basket: best variant per product from any store.
+* Per-supermarket breakdown: what’s available + itemized cost.
+* Cheapest supermarket: full-stock only store with the lowest price.
+* Removal of repeated/duplicated product entries to prevent inflated totals.
+##### API Views & Endpoint Structure:
+* Structured the following cart endpoints:
+  *` GET /cart/view/` → calls `get_user_cart_summary()` 
+  * `GET /cart/compare/` → calls `compare_supermarkets() `on user items.
+  * `GET /cart/cheapest-supermarket/` → finds store with the lowest total (currently only returns the one with all
+  items.
+  * `GET /cart/mixed-basket/` → returns cheapest variant per product.
+  * `POST /cart/add/` → adds item to cart with variant + locked flag.
+  * `DELETE /cart/remov`e/ → removes product from cart (variant-aware logic pending).
+* All views are guarded with `IsAuthenticated`.
+* Ensured views rely solely on the service layer for logic (thin views).
+
+#### Files Created/Updated:
+* `products/models.py`, `shopping_cart/models.py`
+  * Clarified `locked` behavior, related names, and relationships.
+* `shopping_cart/services.py`
+  * Pricing logic, cart management, supermarket breakdown.
+* `shopping_cart/views.py`
+  * Cart endpoints + robust fallback handling for empty/missing cart.
+* `shopping_cart/serializers.py`
+  * `CartAddSerializer`, `CartRemoveSerializer`, `BasketSerializer`.
+* `shopping_cart/urls.py`
+  * Added full route map for all 7 cart endpoints.
+
+## Date: 5th May 2025 (Noki)
+### Branches: Noki-Users-1
+#### Shopping Cart Breakdown & Pricing Comparison – Stability & Accuracy Fixes
+
+##### Fix Breakdown View to Reflect Actual Items and Totals
+* Updated `get_breakdown_for_supermarket()`:
+  * Recalculates total from matched items only instead of using precomputed basket totals.
+  * Rewrites `meta.supermarket_totals` to reflect corrected per-store totals.
+  * Ensures `unavailable_items` are correctly listed per supermarket.
+  * Prevent `NoneType` errors when converting `price` or `total` using `float()`.
+
+#### Files Updated:
+* `services.py`
+  * `analyze_basket_pricing()`
+  * `get_breakdown_for_supermarket()`
+* `views.py`
+  * `view_user_cart()`
+  * `add_to_cart_view()`
+* `models.py`
+  * **CartItem** FK updated with related_name ='items'
