@@ -202,7 +202,7 @@ def add_to_shopping_list_view(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["DELETE"])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def remove_from_shopping_list_view(request):
     serializer = ShoppingListRemoveSerializer(data=request.data)
