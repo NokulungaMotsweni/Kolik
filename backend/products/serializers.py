@@ -28,11 +28,11 @@ class GenericProductSerializer(serializers.ModelSerializer):
     Serializes a generic product like 'Whole Milk 1L'.
     Returns the product name, amount, unit, and the category name.
     """
-    category = serializers.CharField(source='category.name')  # Shows just the category name (not full object)
+    category_name = serializers.CharField(source='category.name', read_only=True)
 
     class Meta:
         model = GenericProduct
-        fields = ['id', 'name', 'amount', 'unit', 'category']
+        fields = ['id', 'name', 'amount', 'unit', 'category_name']
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):

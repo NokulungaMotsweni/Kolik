@@ -97,3 +97,20 @@ def search_products(request):
     results = GenericProduct.objects.filter(name__icontains=query)
     serializer = GenericProductSerializer(results, many=True)
     return Response(serializer.data)
+
+
+
+
+
+# View 7: Retrieve details of a single generic product
+# Returns product name, amount, unit, and category name.
+# Useful for showing product detail pages or popups in the frontend.
+
+@api_view(['GET'])
+def product_detail(request, product_id):
+    try:
+        product = GenericProduct.objects.select_related('category').get(id=product_id)
+        serializer = GenericProductSerializer(product)
+        return Response(serializer.data)
+    except GenericProduct.DoesNotExist:
+        return Response({"error": "Product not found."}, status=404)  
