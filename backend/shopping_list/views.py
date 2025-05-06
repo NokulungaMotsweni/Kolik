@@ -124,7 +124,7 @@ def view_supermarket_breakdown(request):
 
     print("Basket Input:", basket) # Terminal Debugging
     breakdown, full_pricing = get_breakdown_for_supermarket(basket, supermarket)
-    print("Breakdown Result:", breakdown)
+    print("Breakdown Result:", breakdown) # Terminal Debugging
 
     if breakdown is None:
         return Response(
