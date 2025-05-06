@@ -103,7 +103,6 @@ def view_supermarket_breakdown(request):
     basket = request.data.get("basket")
     supermarket = request.data.get("supermarket")
 
-
     if not supermarket:
         return Response({"error": "Supermarket name is required."}, status=400)
 

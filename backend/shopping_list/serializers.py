@@ -19,6 +19,5 @@ class ShoppingListAddSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(min_value=1)
     variant_id = serializers.IntegerField(required=False, allow_null=True)
 
-
 class ShoppingListRemoveSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()

@@ -30,8 +30,9 @@ def analyze_basket_pricing(basket):
     product_breakdown = []
     mixed_basket_items = []
     supermarket_totals = {}
+    supermarket_variant_totals_per_product = {}
     supermarket_totals_list = []
-    mixed_total = Decimal("0.0")
+    mixed_total = Decimal("0.00")
     warnings = []
     missing_per_supermarket = defaultdict(list)
 
@@ -42,9 +43,7 @@ def analyze_basket_pricing(basket):
         combined[pid] += qty
 
     basket = [{"product_id": pid, "quantity": qty} for pid, qty in combined.items()]
-
-    # Preload all variants
-    all_variants = ProductVariant.objects.select_related("supermarket", "generic_product")
+    print("CLEANED BASKET:", basket)
 
     for item in basket:
         try:
@@ -54,13 +53,13 @@ def analyze_basket_pricing(basket):
             continue
 
         quantity = Decimal(item.get("quantity", 1))
-        variants = all_variants.filter(generic_product=generic_product)
+        variants = ProductVariant.objects.filter(generic_product=generic_product)
 
         if not variants.exists():
             warnings.append(f"No variants available for '{generic_product.name}'.")
             continue
 
-        # Organize prices by supermarket for this product
+        # Organise prices by supermarket for this product
         product_row = {
             "product": generic_product.name,
             "quantity": quantity,
@@ -71,13 +70,11 @@ def analyze_basket_pricing(basket):
 
         cheapest_variant = None
 
+        # Build the display data
         for variant in variants:
             supermarket_name = variant.supermarket.name
             price = Decimal(variant.price)
             total = price * quantity
-
-            # Track all supermarkets
-            supermarket_names.add(supermarket_name)
 
             product_row["supermarkets"].append({
                 "name": supermarket_name,
@@ -86,32 +83,56 @@ def analyze_basket_pricing(basket):
                 "variant": variant.name
             })
 
+            # Track all supermarkets
+            supermarket_names.add(supermarket_name)
+
             # Track the  best variant (for mixed basket)
             if not cheapest_variant or price < cheapest_variant.price:
                 cheapest_variant = variant
 
-            # Add to per-supermarket totals
-            if supermarket_name not in supermarket_totals:
-                supermarket_totals[supermarket_name] = {
-                    "total": Decimal("0.0"),
-                    "all_items_available": True
+        # Find the best variant per supermarket per product
+        supermarket_variant_totals_per_product = {}
+        for entry in product_row["supermarkets"]:
+            name = entry["name"]
+            price = entry["price"]
+            if price is None:
+                continue
+            total = entry["total"]
+
+            if name not in supermarket_variant_totals_per_product or price < supermarket_variant_totals_per_product[name]["price"]:
+                supermarket_variant_totals_per_product[name] = {
+                    "price": price,
+                    "total": total
                 }
 
-            supermarket_totals[supermarket_name]["total"] += total
+        print(f"[{generic_product.name}] Cheapest variants selected per supermarket:")
+        for market, data in supermarket_variant_totals_per_product.items():
+            print(f"  - {market} += {data['total']}")
 
-            # Fill in missing stores with nulls
-            existing = {s["name"] for s in product_row["supermarkets"]}
-            for market in supermarket_totals:
-                if market not in existing:
-                    product_row["supermarkets"].append({
-                        "name": market,
-                        "price": None,
-                        "total": None,
-                        "variant": None
-                    })
-                    supermarket_totals[market]["all_items_available"] = False
-                    missing_per_supermarket[market].append(generic_product.name)
+        # Accumulate total per store
+        for market, data in supermarket_variant_totals_per_product.items():
+            if market not in supermarket_totals:
+                supermarket_totals[market] = {
+                    "total": Decimal("0.00"),
+                    "all_items_available": True
+                }
+            supermarket_totals[market]["total"] += data["total"]
 
+
+        # Fill in missing stores with nulls (only visual, not included in totals)
+        existing = {s["name"] for s in product_row["supermarkets"]}
+        for market in supermarket_variant_totals_per_product:
+            if market not in existing:
+                product_row["supermarkets"].append({
+                    "name": market,
+                    "price": None,
+                    "total": None,
+                    "variant": None
+                })
+                supermarket_variant_totals_per_product[market]["all_items_available"] = False
+                missing_per_supermarket[market].append(generic_product.name)
+
+        # Add to mixed basket
         if cheapest_variant:
             product_row["best_price"] = float(cheapest_variant.price)
             product_row["best_supermarket"] = cheapest_variant.supermarket.name
@@ -126,27 +147,21 @@ def analyze_basket_pricing(basket):
 
         product_breakdown.append(product_row)
 
-    # Prepare final results
+    # Prepare final results; filtering out 0-total and irrelevant stores
     for name in sorted(supermarket_totals.keys()):
         total_data = supermarket_totals[name]
-        supermarket_totals_list.append({
-            "supermarket": name,
-            "total": total_data.get("total", 0.0),
-            "all_items_available": total_data.get("all_items_available", False)
-        })
+        if total_data["total"] > 0 or total_data["all_items_available"]:
+            supermarket_totals_list.append({
+                "supermarket": name,
+                "total": float(round(total_data["total"], 2)),
+                "all_items_available": total_data.get("all_items_available", False)
+            })
 
     mixed_total = sum(item["total"] for item in mixed_basket_items)
 
     return {
         "products": product_breakdown,
-        "supermarket_totals": [
-            {
-                "supermarket": st["supermarket"],
-                "total": float(round(Decimal(st["total"]), 2)),
-                "all_items_available": st["all_items_available"]
-            }
-            for st in supermarket_totals_list
-        ],
+        "supermarket_totals": supermarket_totals_list,
         "best_mixed_basket": {
             "total": float(round(mixed_total, 2)),
             "items": [
@@ -169,35 +184,17 @@ def calculate_totals_for_user(user):
     Load the user's cart and run total calculations.
     """
     try:
-        cart = ShoppingList.objects.get(user=user)
+        shopping_list = user.shopping_list
     except ShoppingList.DoesNotExist:
-        return {
-            "products": [],
-            "supermarket_totals": [],
-            "best_mixed_basket": {
-                "total": 0.0,
-                "items": []
-            },
-            "warnings": [],
-            "error": "Cart not found."
-        }
+        return {"error": "Shopping list not found."}
 
     basket = [
         {"product_id": item.product.id, "quantity": item.quantity}
-        for item in cart.items.all()
+        for item in shopping_list.items.all()
     ]
 
     if not basket:
-        return {
-            "products": [],
-            "supermarket_totals": [],
-            "best_mixed_basket": {
-                "total": 0.0,
-                "items": []
-            },
-            "warnings": [],
-            "error": "Cart is empty."
-        }
+        return {"error": "Cart is empty."}
 
     return analyze_basket_pricing(basket)
 
