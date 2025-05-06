@@ -26,6 +26,18 @@ class ShoppingCart(models.Model):
     # Timestamp - When the shopping cart was created
     updated_at = models.DateTimeField(auto_now=True)
 
+    def add_item(self, product, variant=None, quantity=1):
+        """
+        Adds an item to the cart. If it already exists, increase quantity.
+        """
+        item, created = self.items.get_or_create(
+            product=product,
+            variant=variant,
+            defaults={'quantity': quantity}
+        )
+
+        return item
+
     def __str__(self):
         # String representation for admin/shell debugging
         return f"ShoppingCart for {self.user}"
