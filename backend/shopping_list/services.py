@@ -155,7 +155,7 @@ def analyze_basket_pricing(basket):
                 for item in mixed_basket_items
             ]
         },
-        "warnings": warnings
+        "warnings": warnings,
         "missing_per_supermarket": dict(missing_per_supermarket)
     }
 
