@@ -34,9 +34,11 @@ from users.enums import CookieConsentType, CookieType
 
 import requests
 from django.shortcuts import redirect, render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 
+from utils.email import send_email
+from utils.recaptcha import verify_recaptcha_v3, verify_recaptcha_v2
 
 User = get_user_model()
 
@@ -325,6 +327,18 @@ class PasswordResetRequestView(APIView):
         )
 
         raw_token = verification.generate_token()
+        reset_link = f"https://your-frontend-domain.com/reset-password/{raw_token}" 
+        email_subject = "Reset your Kolik password" 
+        email_body = f""" 
+        <p>Hello,</p> 
+        <p>You requested a password reset for your Kolik account. Click below:</p> 
+        <p><a href='{reset_link}'>Reset My Password</a></p> 
+        <p>This link will expire in 30 minutes.</p> 
+        <p>If you didn't request this, ignore this email.</p> 
+        """
+        
+        send_email(subject=email_subject, to_email=user.email, html_content=email_body)
+
         verification.save()
 
         # TEMP: print raw token (we will email this later)
@@ -668,6 +682,17 @@ class RequestEmailChangeView(APIView):
         )
 
         raw_token = verification.generate_token()
+        confirmation_link = f"https://your-frontend-domain.com/confirm-email-change/{raw_token}"
+        email_subject = "Confirm Your Kolik Email Change"
+        email_body = f"""
+        <p>Hello,</p>
+        <p>You requested to change your Kolik email. Confirm it below:</p>
+        <p><a href='{confirmation_link}'>Confirm Email Change</a></p>
+        <p>This link will expire in 30 minutes.</p>
+        <p>If you didn't request this, ignore this email.</p>
+        """
+        send_email(subject=email_subject, to_email=user.pending_email, html_content=email_body)
+
         verification.save()
 
         # TEMP: Print the token (in the future: send email!)
@@ -756,12 +781,29 @@ class ConfirmEmailChangeView(APIView):
 
         return Response({
             "message": "Email updated successfully. Please verify your new email address."
-        }, status=status.HTTP_200_OK)                
+        }, status=status.HTTP_200_OK)     
+           
+#recaptcha v3 by default and a fallback to v2 if v3 score is too low or fails
+def register_user(request):
+    if request.method == "POST":
+        v3_token = request.POST.get("recaptcha_token")
+        v2_token = request.POST.get("recaptcha_token_v2")
 
+        # 1. Try v3
+        if v3_token:
+            success, score = verify_recaptcha_v3(v3_token)
+            if success and score >= 0.5:
+                return JsonResponse({"message": "v3 passed. User registered."})
 
+        # 2. Fallback to v2
+        if v2_token:
+            success_v2 = verify_recaptcha_v2(v2_token)
+            if success_v2:
+                return JsonResponse({"message": "v2 fallback passed. User registered."})
 
+        return JsonResponse({"error": "reCAPTCHA failed."}, status=400)
 
-
-
-
-
+    return render(request, "register.html", {
+        "site_key_v3": settings.RECAPTCHA_V3_SITE_KEY,
+        "site_key_v2": settings.RECAPTCHA_V2_SITE_KEY
+    })
