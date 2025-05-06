@@ -104,19 +104,23 @@ def view_supermarket_breakdown(request):
     basket = request.data.get("basket")
     supermarket = request.data.get("supermarket")
 
+    print("Basket Input:", basket)
+    results = analyze_basket_pricing(basket)
+    print("Analyze Result:", results)
+    
     if not supermarket:
         return Response({"error": "Supermarket name is required."}, status=400)
 
-        # If basket is not provided, use the logged-in user's cart
+        # If basket is not provided, use the logged-in user's shopping_list
     if not basket:
         try:
-            cart = request.user.shopping_cart
+            shopping_list = request.user.shopping_list
         except ShoppingList.DoesNotExist:
             return Response({"error": "Cart not found."}, status=404)
 
         basket = [
             {"product_id": item.product.id, "quantity": item.quantity}
-            for item in cart.items.all()
+            for item in shopping_list.items.all()
         ]
 
     if not basket:
@@ -195,7 +199,7 @@ def remove_from_shopping_list_view(request):
 @permission_classes([IsAuthenticated])
 def clear_shopping_list_view(request):
     try:
-        cart = request.user.shopping_cart
+        cart = request.user.shopping_list
 
         print("🧺 Clearing cart for user:", request.user.id)
         print("📦 Cart ID:", cart.id)
