@@ -44,5 +44,42 @@ class ShoppingCart(models.Model):
 
 
 
+class CartItem(models.Model):
+    """
+    Represents an item within the user;s shopping cart.
+
+    Each CartItem links to a specific product (and optionally a product variant).
+    Tracks the quantity selected by the user.
+
+.    """
+
+    # Default Moel Manager
+    objects = models.Manager()
+
+    # Reference to the shopping cart
+    cart = models.ForeignKey(
+        ShoppingCart,
+        on_delete=models.CASCADE,
+        related_name='items'
+    )
+
+    # Product added to the cart
+    product = models.ForeignKey(GenericProduct, on_delete=models.CASCADE)
+
+    # Opti0nal variant of the product
+    variant = models.ForeignKey(
+        ProductVariant,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    # Quantity of the product/variant added to the cart
+    quantity = models.PositiveIntegerField(default=1)
+
+
+    def __str__(self):
+        # String representation for admin/shell/debugging
+        return f"{self.quantity}x {self.product} (Variant: {self.variant}) in cart {self.cart.id}"
 
 # Create your models here.
