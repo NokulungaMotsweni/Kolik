@@ -739,7 +739,7 @@ class ConfirmEmailChangeView(APIView):
         # Update email and keep email verified
         user.email = user.pending_email
         user.pending_email = None
-        user.is_email_verified = True  # <- keep verified status
+        user.is_email_verified = True  
         user.save()
 
         # Mark token as used
