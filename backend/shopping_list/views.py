@@ -136,7 +136,8 @@ def view_supermarket_breakdown(request):
         "breakdown": breakdown,
         "meta": {
             "supermarket_totals": full_pricing.get("supermarket_totals"),
-            "warnings": full_pricing.get("warnings")
+            "warnings": full_pricing.get("warnings"),
+            "missing_per_supermarket": full_pricing.get("missing_per_supermarket")
         }
     }, status=status.HTTP_200_OK)
 
