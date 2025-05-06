@@ -132,14 +132,36 @@ def view_supermarket_breakdown(request):
             status=status.HTTP_404_NOT_FOUND
         )
 
-    return Response({
-        "breakdown": breakdown,
-        "meta": {
-            "supermarket_totals": full_pricing.get("supermarket_totals"),
-            "warnings": full_pricing.get("warnings"),
-            "missing_per_supermarket": full_pricing.get("missing_per_supermarket")
-        }
-    }, status=status.HTTP_200_OK)
+    response = {
+        "breakdown": breakdown
+    }
+
+    warnings = full_pricing.get("warnings", [])
+    missing_per_supermarket = full_pricing.get("missing_per_supermarket", {})
+
+    # Only include meta if there's relevant extra info
+    if warnings or missing_per_supermarket:
+        response["meta"] = {}
+
+        # Include ONLY the requested supermarket in totals
+        if full_pricing.get("supermarket_totals"):
+            filtered_totals = [
+                s for s in full_pricing["supermarket_totals"]
+                if s["supermarket"] == supermarket
+            ]
+            if filtered_totals:
+                response["meta"]["supermarket_totals"] = filtered_totals
+
+        if warnings:
+            response["meta"]["warnings"] = warnings
+
+        if missing_per_supermarket:
+            response["meta"]["missing_per_supermarket"] = {
+                k: v for k, v in missing_per_supermarket.items()
+                if k == supermarket and v  # non-empty
+            }
+
+    return Response(response, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
