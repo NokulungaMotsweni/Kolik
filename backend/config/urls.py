@@ -7,7 +7,7 @@ Routes:
 - /admin/ → Django admin panel
 - /api/auth/ → User registration and login (handled by `users` app)
 - /api/products/ → Product listings and comparisons (handled by `products` app)
-- /api/cart/ → Basket and deal logic (handled by `shopping_cart` app)
+- /api/cart/ → Basket and deal logic (handled by `shopping_list` app)
 
 Note:
 In development mode, media files are served using Django’s static file server.
@@ -31,7 +31,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),                     
     path('api/auth/', include('users.urls')),            
     path('api/products/', include('products.urls')),     
-    path('api/cart/', include('shopping_cart.urls')),
+    path('api/shopping-list/', include('shopping_list.urls')),
     path('', home),
 ]
 

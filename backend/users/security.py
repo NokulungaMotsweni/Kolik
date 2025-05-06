@@ -44,7 +44,7 @@ class SecurityPolicy:
         now_time = now()
 
         # If the user is permanently blocked, deny further login attempts
-        if user.is_blocked and (not user.cooldown_time_until or user.cooldown_until < now_time):
+        if user.is_blocked and (not user.cooldown_until or user.cooldown_until < now_time):
             return False
 
 

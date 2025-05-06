@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.db import models
 from products.models import GenericProduct, ProductVariant
+from django.core.exceptions import ValidationError
 
 
-class ShoppingCart(models.Model):
+class ShoppingList(models.Model):
     """
     Represents ab shopping cart that is associated with a single user.
 
@@ -17,7 +19,7 @@ class ShoppingCart(models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='shopping_cart'
+        related_name='shopping_list'
     )
 
     # Timestamp - When the shopping cart was created
@@ -44,7 +46,7 @@ class ShoppingCart(models.Model):
 
 
 
-class CartItem(models.Model):
+class ShoppingListItem(models.Model):
     """
     Represents an item within the user;s shopping cart.
 
@@ -58,7 +60,7 @@ class CartItem(models.Model):
 
     # Reference to the shopping cart
     cart = models.ForeignKey(
-        ShoppingCart,
+        ShoppingList,
         on_delete=models.CASCADE,
         related_name='items'
     )

@@ -13,6 +13,7 @@ class Category(models.Model):
 
 #  GenericProduct is the base product users compare (e.g. "Whole milk 1L", "Butter 250 g")
 class GenericProduct(models.Model):
+    objects = models.Manager()
     UNIT_CHOICES = [
         ("L", "Liters"),
         ("ml", "Milliliters"),
@@ -42,6 +43,7 @@ class Supermarket(models.Model):
 # ProductVariant is the real-world version of a generic product
 # e.g., "Olma Selské mléko plnotučné 3,9%" from Tesco for 18.90 Kč
 class ProductVariant(models.Model):
+    objects = models.Manager()
     generic_product = models.ForeignKey(GenericProduct, on_delete=models.CASCADE, related_name='variants')
     supermarket = models.ForeignKey(Supermarket, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)  # Specific brand/product name
