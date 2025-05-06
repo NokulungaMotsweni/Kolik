@@ -232,8 +232,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         verification.save()
 
-        # TEMPORARY FOR DEV/TESTING (REMOVE BEFORE PROD)
-        print("Verification Token: ", raw_token)
+        
 
         # Log success to SignupAttempt
         SignUpAttempts.objects.create(
