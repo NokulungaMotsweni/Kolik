@@ -77,7 +77,6 @@ def view_user_shopping_list(request):
     return Response({"shopping_list": items}, status=status.HTTP_200_OK)
 
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def compare_user_shopping_list(request):
@@ -104,14 +103,11 @@ def view_supermarket_breakdown(request):
     basket = request.data.get("basket")
     supermarket = request.data.get("supermarket")
 
-    print("Basket Input:", basket)
-    results = analyze_basket_pricing(basket)
-    print("Analyze Result:", results)
-    
+
     if not supermarket:
         return Response({"error": "Supermarket name is required."}, status=400)
 
-        # If basket is not provided, use the logged-in user's shopping_list
+    # If basket is not provided, use the logged-in user's shopping_list
     if not basket:
         try:
             shopping_list = request.user.shopping_list
@@ -126,7 +122,9 @@ def view_supermarket_breakdown(request):
     if not basket:
         return Response({"message": "Cart is empty."}, status=204)
 
+    print("Basket Input:", basket)
     breakdown, full_pricing = get_breakdown_for_supermarket(basket, supermarket)
+    print("Breakdown Result:", breakdown)
 
     if breakdown is None:
         return Response(

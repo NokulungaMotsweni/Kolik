@@ -33,6 +33,7 @@ def analyze_basket_pricing(basket):
     supermarket_totals_list = []
     mixed_total = Decimal("0.0")
     warnings = []
+    missing_per_supermarket = defaultdict(list)
 
     combined = defaultdict(Decimal)
     for item in basket:
@@ -105,6 +106,7 @@ def analyze_basket_pricing(basket):
                         "variant": None
                     })
                     supermarket_totals[market]["all_items_available"] = False
+                    missing_per_supermarket[market].append(generic_product.name)
 
         if cheapest_variant:
             product_row["best_price"] = float(cheapest_variant.price)
@@ -154,6 +156,7 @@ def analyze_basket_pricing(basket):
             ]
         },
         "warnings": warnings
+        "missing_per_supermarket": dict(missing_per_supermarket)
     }
 
 
@@ -312,43 +315,44 @@ def get_breakdown_for_supermarket(basket, supermarket_name):
     if not isinstance(results, dict) or "supermarket_totals" not in results:
         return None, results
 
-    store_data = next((s for s in results["supermarket_totals"]
-                       if s["supermarket"] == supermarket_name), None)
+    store_data = next(
+        (s for s in results["supermarket_totals"]
+                       if s["supermarket"] == supermarket_name),
+        None
+    )
     if not store_data:
         return None, results
 
     store_items = []
-    for p in results["products"]:
-        match = next((s for s in p["supermarkets"]
+    # Collect missing items
+    missing_items = []
+
+    for product in results["products"]:
+        match = next((s for s in product["supermarkets"]
                       if s["name"] == supermarket_name), None)
 
-        if match and isinstance(match.get("price"), (int, float)) and isinstance(match.get("total"), (int, float)):
-            store_items.append({
-                "product": p["product"],
-                "variant": match["variant"],
-                "price": float(match["price"]),
-                "quantity": float(p["quantity"]),
-                "total": float(match["total"])
-            })
+        item_entry = {
+            "product": product["product"],
+            "variant": match.get("variant") if match else None,
+            "price": float(match["price"]) if match and match.get("price") is not None else None,
+            "quantity": float(product["quantity"]),
+            "total": float(match["total"]) if match and match.get("total") is not None else None
+        }
+
+        if item_entry["price"] is None or item_entry["total"] is None:
+            missing_items.append(product["product"])
+
+        store_items.append(item_entry)
 
     # Sort alphabetically by product name
     store_items.sort(key=lambda x: x["product"])
 
-    # Collect missing items
-    missing_items = []
-    for product in results["products"]:
-        found = False
-        for store in product.get("supermarkets", []):
-            if store["name"] == supermarket_name and store["price"] is not None:
-                found = True
-                break
-        if not found:
-            missing_items.append(product["product"])
+    # Recalculate total using only items with a known total
+    calculated_total = float(round(
+        sum(item["total"] for item in store_items if item["total"] is not None), 2
+    ))
 
-    # ✅ Recalculate total from matched items
-    calculated_total = float(round(sum(item["total"] for item in store_items if item["total"] is not None), 2))
-
-    # ✅ Patch the meta totals so it reflects the accurate total for this supermarket
+    # Patch the meta totals so it reflects the accurate total for this supermarket
     adjusted_meta = []
     for s in results["supermarket_totals"]:
         if s["supermarket"] == supermarket_name:
