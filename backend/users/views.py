@@ -341,8 +341,7 @@ class PasswordResetRequestView(APIView):
 
         verification.save()
 
-        # TEMP: print raw token (we will email this later)
-        print("RESET TOKEN:", raw_token)
+       
 
         return Response({"message": "If this email exists, a reset link will be sent."}, status=200)   
 
@@ -695,8 +694,6 @@ class RequestEmailChangeView(APIView):
 
         verification.save()
 
-        # TEMP: Print the token (in the future: send email!)
-        print("EMAIL CHANGE TOKEN:", raw_token)
 
         log_action(request, action="request_email_change", status="SUCCESS", user=user)
 
@@ -739,10 +736,10 @@ class ConfirmEmailChangeView(APIView):
         if not user.pending_email:
             return Response({"error": "No pending email change found."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update email and reset verification status
+        # Update email and keep email verified
         user.email = user.pending_email
         user.pending_email = None
-        user.is_email_verified = False
+        user.is_email_verified = True  # <- keep verified status
         user.save()
 
         # Mark token as used
@@ -750,38 +747,11 @@ class ConfirmEmailChangeView(APIView):
         verification.verified_at = timezone.now()
         verification.save()
 
-        # Automatically generate new email verification token
-        verification_type, _ = VerificationType.objects.get_or_create(
-            name="Email",
-            defaults={"requires_token": True, "expires_on": timedelta(minutes=30)}
-        )
-
-        # Invalidate any previous tokens of this type
-        UserVerification.objects.filter(
-            user=user,
-            verification_type=verification_type,
-            is_latest=True
-        ).update(is_latest=False)
-
-        # Create a new token
-        new_verification = UserVerification.objects.create(
-            user=user,
-            verification_type=verification_type,
-            expires_at=timezone.now() + verification_type.expires_on,
-            is_latest=True
-        )
-
-        raw_token = new_verification.generate_token()
-        new_verification.save()
-
-        # TEMP: print the new token until frontend email system is integrated
-        print("NEW EMAIL VERIFICATION TOKEN:", raw_token)
-
         log_action(request, action="confirm_email_change", status="SUCCESS", user=user)
 
         return Response({
-            "message": "Email updated successfully. Please verify your new email address."
-        }, status=status.HTTP_200_OK)     
+            "message": "Your email address has been changed. You can now use it to log in."
+        }, status=status.HTTP_200_OK)
            
 #recaptcha v3 by default and a fallback to v2 if v3 score is too low or fails
 def register_user(request):
