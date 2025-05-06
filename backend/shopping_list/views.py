@@ -122,7 +122,7 @@ def view_supermarket_breakdown(request):
     if not basket:
         return Response({"message": "Cart is empty."}, status=204)
 
-    print("Basket Input:", basket)
+    print("Basket Input:", basket) # Terminal Debugging
     breakdown, full_pricing = get_breakdown_for_supermarket(basket, supermarket)
     print("Breakdown Result:", breakdown)
 
