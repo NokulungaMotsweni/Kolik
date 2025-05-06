@@ -92,7 +92,11 @@ def analyze_basket_pricing(basket):
 
             # Add to per-supermarket totals
             if supermarket_name not in supermarket_totals:
-                supermarket_totals[supermarket_name] = {"total": Decimal("0.0"), "all_items_available": True}
+                supermarket_totals[supermarket_name] = {
+                    "total": Decimal("0.0"),
+                    "all_items_available": True
+                }
+
             supermarket_totals[supermarket_name]["total"] += total
 
             # Fill in missing stores with nulls
