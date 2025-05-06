@@ -1,6 +1,10 @@
 from decouple import config  # .env config
 from pathlib import Path
 from django.utils.translation import gettext_lazy as _
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # ========================
 # BASE DIRECTORY
@@ -34,7 +38,7 @@ INSTALLED_APPS = [
     'products',
     'shopping_list',
 ]
-
+ 
 # ========================
 # MIDDLEWARE
 # ========================
@@ -146,3 +150,14 @@ DEBUG_IP_OVERRIDE = config("DEBUG_IP_OVERRIDE", default=None)
 # POLICY VERSIONING
 # ========================
 COOKIE_POLICY_VERSION = "1.0"
+
+#sendgrid 
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+#RECAPTCHA
+RECAPTCHA_V3_SITE_KEY = os.getenv("RECAPTCHA_V3_SITE_KEY")
+RECAPTCHA_V3_SECRET_KEY = os.getenv("RECAPTCHA_V3_SECRET_KEY")
+
+RECAPTCHA_V2_SITE_KEY = os.getenv("RECAPTCHA_V2_SITE_KEY")
+RECAPTCHA_V2_SECRET_KEY = os.getenv("RECAPTCHA_V2_SECRET_KEY")

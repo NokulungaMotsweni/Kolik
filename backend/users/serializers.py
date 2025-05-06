@@ -12,14 +12,15 @@ from datetime import timedelta
 from users.enums import AuditAction
 from users.security import SecurityPolicy
 from utils.audit import log_action
-
+from utils.email import send_email
 
 User = get_user_model()
+
 from users.models import (
     UserVerification,
     VerificationType,
     LoginAttempts,
-    SignupAttempts,
+    SignUpAttempts,
     SignupFailureReason,
     AuditLog,
     CustomUser,
@@ -77,12 +78,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         """
 
         request = self.context.get('request')
+        ip_address = "unknown"
+        device = "unknown"
 
-        # Extract IP (X-Forwarded-For if behind proxy)
-        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
-
-        # Extrac device/user-agent info
-        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        if request:
+            ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+            device = request.META.get('HTTP_USER_AGENT', 'Unknown')
 
         # Get email from initial data
         email = self.initial_data.get("email", "unknown")
@@ -127,8 +128,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context.get('request')
-        ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
-        device = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        ip_address = "unknown"
+        device = "unknown"
+
+        if request:
+            ip_address = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "")).split(",")[0].strip()
+            device = request.META.get('HTTP_USER_AGENT', 'Unknown')
         email = data.get('email')
 
         # IP-Level Security Check
@@ -214,6 +219,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         # Call generate_token Function
         raw_token = verification.generate_token()
+        verification_link = f"https://your-frontend-domain.com/verify-email/{raw_token}"
+        email_subject = "Verify your Kolik account"
+        email_body = f"""
+        <p>Hello {user.name},</p>
+        <p>Thank you for registering at Kolik. Please verify your email by clicking the link below:</p>
+        <p><a href='{verification_link}'>Verify my account</a></p>
+        <p>If you didn't sign up, ignore this email.</p>
+        """
+        
+        send_email(subject=email_subject, to_email=user.email, html_content=email_body)
+
         verification.save()
 
         # TEMPORARY FOR DEV/TESTING (REMOVE BEFORE PROD)
