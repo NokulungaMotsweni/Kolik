@@ -448,6 +448,47 @@ Files Updated:
 * `tests.py`
   * Added serializer test for password rejection/acceptance.
 
+### April 27 – Disposable Email Protection (Agáta)
+
+**Implemented protection** against disposable email addresses during user registration.
+- Created a custom `disposable_domains.py` file containing the full list of known disposable domains, sourced from the GitHub repo: [`disposable-email-domains`](https://github.com/disposable-email-domains/disposable-email-domains).
+- Integrated the domain check directly in the `RegisterSerializer` by extracting the domain from the submitted email and comparing it against the loaded list.
+- Registration is rejected with a clear validation error message if the user attempts to sign up with a temporary email service.
+
+## April 28, 2025 – Profile Management (Agáta)
+
+#### Built secure profile management functionality:
+
+- Created `ProfileView` with `GET` and `PATCH` methods to allow users to **view and update their name**. The response also includes `email` and `mfa_enabled` status.
+- Implemented a **secure password change endpoint** (`ChangePasswordView`) requiring:
+  - Current password
+  - Strong new password (validated for length, uppercase, lowercase, digit, and special character)
+  - MFA code verification
+- Developed the **email change request flow** (`RequestEmailChangeView`):
+  - Requires current password, new email, and MFA verification.
+  - Saves the new address as `pending_email` and sends a token-based confirmation link to the user.
+- Added `ConfirmEmailChangeView` to complete the email change process **after token verification**.
+- All views are protected using `IsAuthenticated`, strict `request.user` ownership validation, and **MFA checks** where applicable.
+
+## May 1, 2025 – Geolocation + Email Flow Fix (Agáta)
+
+### Implemented geolocation and VPN detection middleware to control access:
+
+- First attempts **country lookup via IPInfo API** (token-based).
+- If IPInfo fails, falls back to **local MaxMind GeoLite2 database** using `geoip2`.
+- Integrated **VPN/proxy detection via proxycheck.io API**, which evaluates risk level and proxy status.
+- Middleware **caches results in the user’s session** using flags:
+  - `geo_checked`
+  - `geo_country`
+  - `geo_proxy`
+- Access is **blocked** if:
+  - The IP’s country is **not `CZ`** → redirects to `REDIRECT_URL`
+  - A VPN/proxy is detected **within CZ** → returns a JSON warning (`451`) prompting the user to disable the VPN
+- Added `DEBUG_IP_OVERRIDE` from `.env` to simulate custom IPs during local development.
+
+### Fixed email change flow:
+- Corrected logic to ensure that **`pending_email` is stored**, and no change occurs until the user confirms via token.
+- Improved verification handling and validation in `ConfirmEmailChangeView`.
 
 ## Date: 3 & 4th May 2025 (Noki)
 ### Branches: Noki-Users-1
@@ -521,6 +562,15 @@ Files Updated:
   * `CartAddSerializer`, `CartRemoveSerializer`, `BasketSerializer`.
 * `shopping_cart/urls.py`
   * Added full route map for all 7 cart endpoints.
+
+
+## May 4, 2025 – Unverified User Cleanup (Agáta)
+
+**Implemented a custom Django management command** to automatically clean up unverified accounts:
+
+- Deletes user accounts that remain **unverified for more than 24 hours** after registration.
+- Designed to be scheduled via a **cron job** for routine cleanup.
+- Helps reduce database clutter and enforce account lifecycle security policies.
 
 ## Date: 5th May 2025 (Noki)
 ### Branches: Noki-Users-1
@@ -626,3 +676,18 @@ Fixed: Missing Variant or Product Crashed Logic:
   * config/settings.py: imported necessary files for sendgrid, defined site key and secret key for both V2 and V3 RECAPTCHA
   * utils/recaptcha.py: defying the logic for Recaptcha. Implemented V3 as the main version, but in the case of a low score or failure, the website resorts to V2.
   * users/views.py: Implements the code in recaptcha.py for user registration.
+
+
+
+## May 6, 2025 – Product Detail View + Confirm Email Flow (Agáta)
+
+**Implemented product detail API view**:
+- Returns product name, amount, unit, and category name.
+- Useful for showing product detail pages or popups in the frontend.
+
+**Refined the email change confirmation flow**:
+- Ensures that **token-based verification** is required before applying the email change.
+- Final email update only occurs **after successful confirmation** via `ConfirmEmailChangeView`.
+
+
+
