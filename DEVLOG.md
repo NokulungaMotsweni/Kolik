@@ -609,3 +609,20 @@ Fixed: Missing Variant or Product Crashed Logic:
   Added custom serializers for adding, removing, and validating shopping list input.
 * `urls.py`
   Connected all new endpoints under the /list/ namespace.
+  
+## Date: 5th May 2025 (Teo)
+### Branches: third_party_apps_v2
+#### Sendgrid automatic email implementation and testing, RECAPTCHA V3 and V2 as fallback implementation and testing
+
+##### Sendgrid automatic email implementation and testing
+  * config/settings.py: imported necessary files for sendgrid, defined default email and secret key (.env).
+  * utils/email.py: defining the base email that will be used for multiple classes/functions.
+  * users/models.py: importing timedelta, adding more to the UserVerification object.
+  * users/serializers: Inside class RegisterSerializer, after raw token creation, created the structure of the email the user will receive to help them verify themselves.
+  * users/views: Inside class PasswordResetRequestView, after raw token creation, created the structure of the email the user will receive to help them reset their password.
+  * users/views: Inside class RequestEmailChangeView, after raw token creation, created the structure of the email the user will receive to help them change the email of their account.
+
+##### RECAPTCHA V3 and V2 as fallback implementation and testing
+  * config/settings.py: imported necessary files for sendgrid, defined site key and secret key for both V2 and V3 RECAPTCHA
+  * utils/recaptcha.py: defying the logic for Recaptcha. Implemented V3 as the main version, but in the case of a low score or failure, the website resorts to V2.
+  * users/views.py: Implements the code in recaptcha.py for user registration.
