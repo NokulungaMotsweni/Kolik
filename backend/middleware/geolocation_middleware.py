@@ -73,6 +73,13 @@ class GeolocationMiddleware:
             session["geo_country"] = country
             session["geo_proxy"] = is_proxy
 
+        # Logs
+        # Get the Client IP Address, Using a Debug Override if Defined
+        client_ip = DEBUG_IP_OVERRIDE or self.get_client_ip(request)
+
+        # Default Status Label for Access; Updated based on geo checks.
+        status = "allowed"
+
         if not country:
             logger.warning("Could not determine country.")
             return redirect(REDIRECT_URL)
