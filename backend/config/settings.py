@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     'users',
     'products',
     'shopping_list',
+
+    # Monitoring/Logging for Middleware
+    'monitoring',
 ]
  
 # ========================
