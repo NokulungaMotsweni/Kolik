@@ -164,3 +164,37 @@ RECAPTCHA_V3_SECRET_KEY = os.getenv("RECAPTCHA_V3_SECRET_KEY")
 
 RECAPTCHA_V2_SITE_KEY = os.getenv("RECAPTCHA_V2_SITE_KEY")
 RECAPTCHA_V2_SECRET_KEY = os.getenv("RECAPTCHA_V2_SECRET_KEY")
+
+# ========================
+# Logging configuration for geolocation-related activity
+# ========================
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,  # Allow other loggers to continue working
+    "formatters": {
+        "verbose": {
+            # Detailed log format including timestamp, level, logger name, and message
+            "format": "[{asctime}] [{levelname}] [{name}] {message}",
+            "style": "{",  # Use new-style formatting
+        },
+    },
+    "handlers": {
+        "file_geo": {
+            # Writes log entries to a file with automatic rotation
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "logs/geolocation.log",  # Log file path
+            "maxBytes": 1024 * 1024 * 5,  # Rotate after 5MB
+            "backupCount": 3,  # Keep up to 3 backup log files
+            "formatter": "verbose",  # Use the verbose formatter above
+        },
+    },
+    "loggers": {
+        "geolocation": {
+            # Logger for geolocation logic (e.g., middleware, logging model)
+            "handlers": ["file_geo"],  # Send logs to the rotating file handler
+            "level": "INFO",  # Log level threshold
+            "propagate": False,  # Do not pass logs to parent loggers
+        },
+    },
+}
