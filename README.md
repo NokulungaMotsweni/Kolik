@@ -130,7 +130,6 @@ Log in using your superuser credentials.
 | GET   | `/api/products-by-category/<category_id>/` | Products by category |
 | GET   | `/api/best-deal/<product_id>/` | Cheapest variant for a product |
 | GET   | `/api/all-variants/<product_id>/` | All supermarket variants |
-| POST   | `/api/basket/` | Calculate total basket price per supermarket |
 |GET    | `/api/shopping-list/view/` | View the current user's shopping list|
 | POST   | `/api/shopping-list/add/` | Add an item to the shopping list |
 | DELETE | `/api/shopping-list/remove/`| Remove an item from the shopping list|
