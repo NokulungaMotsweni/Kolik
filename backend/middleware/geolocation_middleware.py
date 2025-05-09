@@ -21,6 +21,34 @@ class GeolocationMiddleware:
         self.get_response = get_response
         self.reader = geoip2.database.Reader(MAXMIND_DB_PATH)
 
+    # Logging
+    def _save_log(self, ip, path, country, is_proxy, status):
+        """
+        Saves a geolocation access log entry to the database.
+
+        Args:
+            ip (str): IP address of the requestor.
+            path (str): The requested URL path.
+            country (str): Country code determined from the IP.
+            is_proxy (bool): Whether the IP was detected as a proxy or VPN.
+            status (str): Status description (e.g., 'allowed', 'blocked', 'vpn_blocked').
+
+        Logs:
+            Errors during log creation are recorded using the 'geolocation' logger.
+        """
+        try:
+            # Attempt toto Create a Log Record
+            GeoAccessLog.objects.create(
+                ip_address=ip,
+                path=path,
+                country=country,
+                is_proxy=is_proxy,
+                status=status,
+            )
+        except Exception as e:
+            # Log Error if Saving to DB Fails
+            logger.error(f"Failed to save GeoAccessLog: {e}")
+
     def __call__(self, request):
         path = request.path
 
