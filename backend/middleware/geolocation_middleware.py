@@ -5,8 +5,9 @@ from django.conf import settings
 from decouple import config
 import logging
 from django.http import JsonResponse
+from monitoring.models import GeoAccessLog
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("geolocation")
 
 IPINFO_TOKEN = settings.IPINFO_TOKEN
 PROXYCHECK_KEY = settings.PROXYCHECK_KEY
@@ -20,6 +21,34 @@ class GeolocationMiddleware:
         self.get_response = get_response
         self.reader = geoip2.database.Reader(MAXMIND_DB_PATH)
 
+    # Logging
+    def _save_log(self, ip, path, country, is_proxy, status):
+        """
+        Saves a geolocation access log entry to the database.
+
+        Args:
+            ip (str): IP address of the requestor.
+            path (str): The requested URL path.
+            country (str): Country code determined from the IP.
+            is_proxy (bool): Whether the IP was detected as a proxy or VPN.
+            status (str): Status description (e.g., 'allowed', 'blocked', 'vpn_blocked').
+
+        Logs:
+            Errors during log creation are recorded using the 'geolocation' logger.
+        """
+        try:
+            # Attempt toto Create a Log Record
+            GeoAccessLog.objects.create(
+                ip_address=ip,
+                path=path,
+                country=country,
+                is_proxy=is_proxy,
+                status=status,
+            )
+        except Exception as e:
+            # Log Error if Saving to DB Fails
+            logger.error(f"Failed to save GeoAccessLog: {e}")
+
     def __call__(self, request):
         path = request.path
 
@@ -27,6 +56,10 @@ class GeolocationMiddleware:
             return self.get_response(request)
 
         session = request.session
+
+        # Skip geolocation checks for ignored paths (e.g., static files, admin, media)
+        if self.is_ignored_path(request.path):
+            return self.get_response(request)
 
         if session.get("geo_checked"):
             country = session.get("geo_country")
@@ -40,20 +73,50 @@ class GeolocationMiddleware:
             session["geo_country"] = country
             session["geo_proxy"] = is_proxy
 
+        # Logs
+        # Get the Client IP Address, Using a Debug Override if Defined
+        client_ip = DEBUG_IP_OVERRIDE or self.get_client_ip(request)
+
+        # Default Status Label for Access; Updated based on geo checks.
+        status = "allowed"
+
         if not country:
             logger.warning("Could not determine country.")
+
+            # Logs
+            # if Country Could Not be Determined, Treat as Blocked and Log
+            status = "blocked_unknown"
+            self._save_log(client_ip, path, country, False, status)
+
             return redirect(REDIRECT_URL)
 
         if country != "CZ":
             logger.warning(f"Blocked non-CZ IP from {country}.")
+
+            # Logs
+            # Block Access for User Outside the Czech Republic and Log
+            status = "blocked_non_cz"
+            self._save_log(client_ip, path, country, False, status)
+
             return redirect(REDIRECT_URL)
 
         if is_proxy:
             logger.warning("CZ user using VPN — showing warning.")
+
+            # Logs
+            # Blocked Access for CZ Users Using a Proxy or VPN and Log
+            status = "blocked_vpn"
+            self._save_log(client_ip, path, country, True, status)
+
             return JsonResponse(
                 {"detail": "VPN detected — please disable it to continue."},
                 status=451
             )
+
+        # Logs
+        # Logs successful access by a CZ user without a Proxy/VPN
+        logger.info(f"[ALLOWED] {client_ip} from {country}")
+        self._save_log(client_ip, path, country, False, status)
 
         return self.get_response(request)
 

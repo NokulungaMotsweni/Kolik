@@ -689,5 +689,54 @@ Fixed: Missing Variant or Product Crashed Logic:
 - Ensures that **token-based verification** is required before applying the email change.
 - Final email update only occurs **after successful confirmation** via `ConfirmEmailChangeView`.
 
+## Date: 9th My 2025 (Noki)
+### Branches: Kolik-GeoAccessLogs
+#### Implement Logging Layer for Existing Geolocation Middleware
+
+##### File-Based Logging:
+* Integrated **RotatingFileHandler** for geolocation logger in `settings.py`.
+  * Logs written to: `logs/geolocation.log`.
+  * Includes log levels `INFO` and `WARNING` with IP, path, and decision reason.
+* Updated middleware to log:
+  * Blocked non-CZ access
+  * VPN detection in CZ
+  * Unknown/malformed IP cases
+  * Allowed accesses from CZ
+
+##### Admin Logging (DB):
+* Created **GeoAccessLog** model under **monitoring** app.
+  * Fields: `timestamp, ip_address, path, country, is_proxy, status`
+* Added `_save_log(...)` call in middle ware for all outcomes:
+  * `allowed`, `blocked_non_cz`, `blocked_unknown`, `blocked_vpn`.
+* Registered model in admin with full filters, search, and list display.
+
+##### Admin Panel Exclusion:
+* Middleware updated to skip geolocation for routes in the `is_ignored_path` function.
+  * Prevented blocking access to admin interface during testing.
+
+#### Tests Run (via `DEBUG_IP_OVERRIDE`:
+* 8.8.8.8 (US) → Logged as blocked_non_cz
+* 0.0.0.0 → Logged as blocked_unknown
+* 88.103.0.1 (CZ) → Logged as allowed
+* 212.102.39.131 (CZ VPN) → Logged as blocked_vpn (via ProxyCheck)
+
+#### Files Created/Updated:
+##### Created:
+* `monitoring/models.py`
+  * Created **GeoAccessLog** model to store access logs in the DB.
+* `monitoring/admin.py`
+  * Registered GeoAccessLog in Django admin with filters and search capabilities.
+
+##### Updated:
+* `middleware/geolocation_middleware.py`
+  * Changed the logger variable to fetch `"geolocation` instead of `__name__`
+  * Added `_save_log()` method to add logs to GeoAccessLog.
+* `config/settings.py`
+  * Added `RotatingFileHandler` and `geolocation` logger configuration under the `LOGGING` dictionary.
+* `.env` (local; only for testing)
+  * Set `DEBUG_IP_OVERRIDE` to simulate different IPs.
+
+
+
 
 
