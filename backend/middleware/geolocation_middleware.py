@@ -5,6 +5,7 @@ from django.conf import settings
 from decouple import config
 import logging
 from django.http import JsonResponse
+from monitoring.models import GeoAccessLog
 
 logger = logging.getLogger(__name__)
 
