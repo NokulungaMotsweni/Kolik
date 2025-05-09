@@ -131,6 +131,14 @@ Log in using your superuser credentials.
 | GET   | `/api/best-deal/<product_id>/` | Cheapest variant for a product |
 | GET   | `/api/all-variants/<product_id>/` | All supermarket variants |
 | POST   | `/api/basket/` | Calculate total basket price per supermarket |
+|GET    | `/api/shopping-list/view/` | View the current user's shopping list|
+| POST   | `/api/shopping-list/add/` | Add an item to the shopping list |
+| DELETE | `/api/shopping-list/remove/`| Remove an item from the shopping list|
+| DELETE | `/api/shopping-list/clear/`| Clear all items from the shopping list|
+| GET    | `/api/shopping-list/compare/`| Compare total prices of the saved list across supermarkets|
+| GET    | `/api/shopping-list/mixed-basket/`| Get the cheapest mixed basket using the best-priced variant from any store |
+| POST   | `/api/shopping-list/supermarket-breakdown/`| Get itemized pricing breakdown for a specific supermarket|
+| POST   | `/api/shopping-list/basket/`| Calculate basket total using a stateless basket input|
 
 > Test them in browser while the dev server is running.
 
