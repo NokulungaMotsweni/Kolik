@@ -11,12 +11,5 @@ class GeoAccessAttempt(models.Model):
     
 
     def __str__(self):
-        if self.user:
-            # Try email, fallback to ID
-            user_info = self.user.email if hasattr(self.user, 'email') else f"User ID {self.user.id}"
-        else:
-            user_info = "Anonymous"
-
-        status = "Blocked" if self.blocked else "Allowed"
-        return f"{self.timestamp} — {user_info} — {self.ip_address} — {self.country or 'Unknown'} — {status}"
+        return f"{self.timestamp} | {self.ip_address} | {self.status}"
 # Create your models here.
