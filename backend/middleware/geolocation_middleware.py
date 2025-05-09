@@ -82,6 +82,12 @@ class GeolocationMiddleware:
 
         if not country:
             logger.warning("Could not determine country.")
+
+            # Logs
+            # if Country Could Not be Determined, Treat as Blocked and Log
+            status = "blocked_unknown"
+            self._save_log(client_ip, path, country, False, status)
+
             return redirect(REDIRECT_URL)
 
         if country != "CZ":
