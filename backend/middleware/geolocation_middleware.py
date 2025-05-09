@@ -57,6 +57,10 @@ class GeolocationMiddleware:
 
         session = request.session
 
+        # Skip geolocation checks for ignored paths (e.g., static files, admin, media)
+        if self.is_ignored_path(request.path):
+            return self.get_response(request)
+
         if session.get("geo_checked"):
             country = session.get("geo_country")
             is_proxy = session.get("geo_proxy")
