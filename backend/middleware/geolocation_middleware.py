@@ -113,6 +113,11 @@ class GeolocationMiddleware:
                 status=451
             )
 
+        # Logs
+        # Logs successful access by a CZ user without a Proxy/VPN
+        logger.info(f"[ALLOWED] {client_ip} from {country}")
+        self._save_log(client_ip, path, country, False, status)
+
         return self.get_response(request)
 
     def get_client_ip(self, request):
