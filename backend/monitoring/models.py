@@ -8,13 +8,7 @@ class GeoAccessAttempt(models.Model):
     is_proxy = models.BooleanField(default=False)
     blocked = models.BooleanField(default=False)
     path = models.CharField(max_length=255)
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='geo_access_attempts'
-    )
+    
 
     def __str__(self):
         if self.user:
