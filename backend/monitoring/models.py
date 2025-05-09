@@ -15,6 +15,7 @@ class GeoAccessLog(models.Model):
     """
 
     # Log Creation
+    objects = models.Manager()
     timestamp = models.DateTimeField(auto_now_add=True)
 
     # Client IP Address
