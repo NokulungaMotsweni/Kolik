@@ -7,7 +7,7 @@ import logging
 from django.http import JsonResponse
 from monitoring.models import GeoAccessLog
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("geolocation")
 
 IPINFO_TOKEN = settings.IPINFO_TOKEN
 PROXYCHECK_KEY = settings.PROXYCHECK_KEY
