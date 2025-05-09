@@ -92,6 +92,12 @@ class GeolocationMiddleware:
 
         if country != "CZ":
             logger.warning(f"Blocked non-CZ IP from {country}.")
+
+            # Logs
+            # Block Access for User Outside the Czech Republic and Log
+            status = "blocked_non_cz"
+            self._save_log(client_ip, path, country, False, status)
+
             return redirect(REDIRECT_URL)
 
         if is_proxy:
