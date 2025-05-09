@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-class GeoAccessAttempt(models.Model):
+class GeoAccessLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField()
     country = models.CharField(max_length=3, null=True, blank=True)
