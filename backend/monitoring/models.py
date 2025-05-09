@@ -6,7 +6,7 @@ class GeoAccessLog(models.Model):
     ip_address = models.GenericIPAddressField()
     country = models.CharField(max_length=3, null=True, blank=True)
     is_proxy = models.BooleanField(default=False)
-    blocked = models.BooleanField(default=False)
+    status = models.CharField(max_length=50)
     path = models.CharField(max_length=255)
     
 
