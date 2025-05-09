@@ -102,6 +102,12 @@ class GeolocationMiddleware:
 
         if is_proxy:
             logger.warning("CZ user using VPN — showing warning.")
+
+            # Logs
+            # Blocked Access for CZ Users Using a Proxy or VPN and Log
+            status = "blocked_vpn"
+            self._save_log(client_ip, path, country, True, status)
+
             return JsonResponse(
                 {"detail": "VPN detected — please disable it to continue."},
                 status=451
