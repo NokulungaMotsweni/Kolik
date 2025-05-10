@@ -20,6 +20,7 @@ from django.conf.urls.static import static
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render
+from debug.views import test_email_send
 
 def home(request):
     if getattr(request, 'show_vpn_warning', False):
@@ -34,6 +35,11 @@ urlpatterns = [
     path('api/shopping-list/', include('shopping_list.urls')),
     path('', home),
 ]
+
+if settings.DEBUG:
+    urlpatterns += [
+        path("test-email/", test_email_send, name="test_email_send"),
+    ]
 
 # Media files in development
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
