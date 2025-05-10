@@ -44,7 +44,6 @@ from utils.recaptcha import verify_recaptcha_v3, verify_recaptcha_v2
 User = get_user_model()
 
 
-
 class RegisterView(APIView):
     """
     Handles secure user registration.
@@ -60,10 +59,6 @@ class RegisterView(APIView):
                 "user_id": str(user.id)
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
 
 
 class LoginView(APIView):
@@ -228,8 +223,6 @@ class VerifyMFAView(APIView):
             return Response({"error": "Invalid code. Try again."}, status=400)
 
 
-
-
 class MFALoginView(APIView):
     """
     Verifies the 6-digit MFA code during login.
@@ -275,11 +268,6 @@ class MFALoginView(APIView):
             log_action(request, action="mfa_login", status="FAILED", user=user)
             log_login(request, email=email, success=False, user=user, failure_reason="Invalid MFA code")
             return Response({"error": "Invalid MFA code."}, status=400)
-
-
-
-
-
 
 
 class PasswordResetRequestView(APIView):
@@ -331,9 +319,6 @@ class PasswordResetRequestView(APIView):
         return Response({"message": "If this email exists, a reset link will be sent."}, status=200)   
 
 
-
-
-
 class PasswordResetConfirmView(APIView):
     """
     Step 2: Confirm token and allow the user to set a new password.
@@ -377,10 +362,6 @@ class PasswordResetConfirmView(APIView):
         verification.save()
 
         return Response({"message": "Password has been reset successfully."}, status=200)  
-
-
-
-
 
 
 @ensure_csrf_cookie
@@ -498,10 +479,6 @@ def accept_mandatory_and_analytics(request):
         )
     # Redirect to the previous page or to homepage of the referrer is missing
     return redirect(request.META.get('HTTP_REFERER', '/'))
-
-
-
-
 
 
 class ProfileView(APIView):
@@ -665,13 +642,6 @@ class RequestEmailChangeView(APIView):
         log_action(request, action="request_email_change", status="SUCCESS", user=user)
 
         return Response({"message": "Verification token has been generated. Please confirm to complete email change."}, status=status.HTTP_200_OK)
-
-
-
-
-
-
-
 
 
 class ConfirmEmailChangeView(APIView):
