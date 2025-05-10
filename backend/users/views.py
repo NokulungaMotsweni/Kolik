@@ -38,6 +38,7 @@ from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 
 from utils.email import send_email
+from utils.email_helpers import send_password_reset_email, send_email_change_verification
 from utils.recaptcha import verify_recaptcha_v3, verify_recaptcha_v2
 
 User = get_user_model()
@@ -173,10 +174,6 @@ class VerifyUserView(APIView):
         return Response({"message": "Verification successful!"})
 
 
-
-
-
-
 class MFASetupView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -203,10 +200,6 @@ class MFASetupView(APIView):
             "secret": user.mfa_secret,
             "qr_code_base64": qr_image_b64
         }, status=200)
-
-
-
-
 
 
 class VerifyMFAView(APIView):
@@ -327,17 +320,9 @@ class PasswordResetRequestView(APIView):
         )
 
         raw_token = verification.generate_token()
-        reset_link = f"https://your-frontend-domain.com/reset-password/{raw_token}" 
-        email_subject = "Reset your Kolik password" 
-        email_body = f""" 
-        <p>Hello,</p> 
-        <p>You requested a password reset for your Kolik account. Click below:</p> 
-        <p><a href='{reset_link}'>Reset My Password</a></p> 
-        <p>This link will expire in 30 minutes.</p> 
-        <p>If you didn't request this, ignore this email.</p> 
-        """
-        
-        send_email(subject=email_subject, to_email=user.email, html_content=email_body)
+
+        # Send Email + Log Email being Sent
+        send_password_reset_email(request, user, raw_token)
 
         verification.save()
 
@@ -544,11 +529,6 @@ class ProfileView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-
-
-
-
 class ChangePasswordView(APIView):
     """
     Allows a logged-in user to change their password.
@@ -607,12 +587,6 @@ class ChangePasswordView(APIView):
         return Response({
             "message": "Password updated successfully. Please log in again with your new password."
         }, status=status.HTTP_200_OK)
-
-
-
-
-
-
 
 
 class RequestEmailChangeView(APIView):
@@ -681,16 +655,9 @@ class RequestEmailChangeView(APIView):
         )
 
         raw_token = verification.generate_token()
-        confirmation_link = f"https://your-frontend-domain.com/confirm-email-change/{raw_token}"
-        email_subject = "Confirm Your Kolik Email Change"
-        email_body = f"""
-        <p>Hello,</p>
-        <p>You requested to change your Kolik email. Confirm it below:</p>
-        <p><a href='{confirmation_link}'>Confirm Email Change</a></p>
-        <p>This link will expire in 30 minutes.</p>
-        <p>If you didn't request this, ignore this email.</p>
-        """
-        send_email(subject=email_subject, to_email=user.pending_email, html_content=email_body)
+
+        # Send Email + Log Email Being Sent
+        send_email_change_verification(request, user, raw_token)
 
         verification.save()
 

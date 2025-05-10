@@ -13,6 +13,7 @@ from users.enums import AuditAction
 from users.security import SecurityPolicy
 from utils.audit import log_action
 from utils.email import send_email
+from utils.email_helpers import send_verification_email
 
 User = get_user_model()
 
@@ -219,16 +220,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         # Call generate_token Function
         raw_token = verification.generate_token()
-        verification_link = f"https://your-frontend-domain.com/verify-email/{raw_token}"
-        email_subject = "Verify your Kolik account"
-        email_body = f"""
-        <p>Hello {user.name},</p>
-        <p>Thank you for registering at Kolik. Please verify your email by clicking the link below:</p>
-        <p><a href='{verification_link}'>Verify my account</a></p>
-        <p>If you didn't sign up, ignore this email.</p>
-        """
-        
-        send_email(subject=email_subject, to_email=user.email, html_content=email_body)
+
+        # Send Email + Log email being sent
+        send_verification_email(request, user, raw_token)
 
         verification.save()
 

@@ -10,6 +10,9 @@ class AuditAction(models.TextChoices):
     MFA_VERIFIED = "mfa_verified", "MFA Verified"
     MFA_LOGIN = "mfa_login", "MFA Login"
     SIGNUP_SUCCESSFUL = "signup_successful", "Signup Successful"
+    EMAIL_VERIFICATION_SENT = "email_verification_sent", "Email Verification Sent"
+    PASSWORD_RESET_SENT = "password_reset_sent", "Password Reset Sent"
+    EMAIL_CHANGE_VERIFICATION_SENT = "email_change_verification_sent", "Email Change Verification Sent"
 
     # For Security
     USER_TEMP_BLOCKED = "user_temp_blocked", "User Temporarily Blocked"

@@ -199,7 +199,6 @@ class SignUpAttempts(models.Model):
             models.Index(fields=["ip_address"]),
         ]
 
-
 class AuditLog(models.Model):
     """
     Stores Secure Audit Logs.
@@ -319,7 +318,6 @@ class CookieConsent(models.Model):
             - Policy Version
         """
         return f"Consent {self.consent_given} for {self.user.email} (v{self.policy_version})"
-
 
 class IPAddressBan(models.Model):
     """
