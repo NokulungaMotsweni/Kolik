@@ -651,7 +651,7 @@ Fixed: Missing Variant or Product Crashed Logic:
   * Prevented inflation of pricing totals from repeated inputs.
 
 #### Files Created/Updated:
-* s`ervices.py`
+* `services.py`
   * Refactored pricing logic, fixed total calculations, added warning system.
 * `views.py`
   * Built all REST endpoints for shopping list operations and pricing insights.
@@ -737,6 +737,71 @@ Fixed: Missing Variant or Product Crashed Logic:
   * Set `DEBUG_IP_OVERRIDE` to simulate different IPs.
 
 
+## Date: 10th My 2025 (Noki)
+### Branches: Kolik-EmailAuditLogging
+#### Implement Dev Email Test Route with Token and Audit Logging
 
+##### Logging Decorator:
+* Created `log_email_action(audit_action)` decorator in u`tils/decorators.py`.
+  * Logs each email-related event to **AuditLog** automatically.
+  * Extracts:
+    * `request.path`
+    * `ip_address` (`HTTP_X_FORWARDED_FOR` fallback to `REMOTE_ADDR`)
+    * `device` (`HTTP_USER_AGENT`)
+    * `user` from `kwargs`
+  * Logs `status=SUCCESS` or `FAILED` depending on the outcome.
+* Used `@wraps(func)` to preserve metadata.
+* Designed to work with any help that send an email as long as it accepts `requests` and `user`.
+
+##### Update Base Email Function:
+* Updated `send_email(subject, to_email, html_content, request=None, user=None)` in `utils/email.py`.
+  * Now compatible with the decorator by accepting `request` and `user`.
+  * Still sends via SendGrid using `DEFAULT_FROM-EMAIL`.
+  * Returns status code from SendGrid or `None` on failure.
+
+##### Email Helper Function:
+* Created `send_verification_email(...)` in `users/emails/email_helpers.py`.
+  * Accepts `request`, `user`, and `token`.
+  * Builds HTML email with tokenised verification link.
+  * Decorated with: `@log_email_action(AuditAction.EMAIL_VERIFICATION_SENT)`
+  * Calls `send_email(...)` and passes full context.
+
+#####  Dev-Only Token + Email Test Route:
+* Created `test_email_send(request)` in `debug/views.py`.
+  * Requires login and DEBUG=True
+  * Creates a `UserVerification` object and generates a token
+  * Uses or creates `VerificationType(name='Email')`
+  * Calls `send_verification_email(request, user, token)`
+  * Returns JSON with:
+    * `token`
+    * `email_sent_to`
+    * `expires_at`
+
+#### Tests Run:
+* Logged in and visited /test_email/
+  * Received tokenized verification email in inbox
+  * Email used correct sender from .env
+  * Token saved to `UserVerification`
+  * **AuditLog** entry created with:
+    * `EMAIL_VERIFICATION_SENT`
+    * `SUCCESS`
+    * `ip_address`, `device`, and `/test-email/` path
+
+#### Files Creates/Updated:
+##### Created:
+* `utils/decorators.py`
+  * `log_email_action(...)` decorator to abstract system-level email audit logging
+* `debug/views.py`
+  * Dev-only route to test token generation + email delivery
+* `users/emails/email_helpers.py`
+  * `send_verification_email(...)` helper with decorator-based logging
+
+##### Updated:
+* `utils/email.py`
+  * Updated `send_email()` to accept request and user
+* `urls.py`
+  * Added `/test-email/ `dev route
+* .env
+  Applied verified `SENDGRID_API_KEY` and `DEFAULT_FROM_EMAIL`
 
 
