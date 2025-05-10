@@ -4,12 +4,29 @@ from utils.decorators import log_email_action
 
 @log_email_action(AuditAction.EMAIL_VERIFICATION_SENT)
 def send_verification_email(request, user, token):
+    """
+       Sends a verification email to the user with a link containing a unique token.
+
+       Args:
+           request (HttpRequest): The current request object.
+           user (User): The user to whom the email is being sent.
+           token (str): The email verification token.
+       """
     link = f"https://example.com/verify-email/{token}"
     html = f"<p>Click here to verify: <a href='{link}'>Verify</a></p>"
+    # Send the Verification Email
     send_email("Verify your email", user.email, html, request=request, user=user)
 
 @log_email_action(AuditAction.PASSWORD_RESET_SENT)
 def send_password_reset_email(request, user, token):
+    """
+        Sends a password reset email to the user with a reset link.
+
+        Args:
+            request (HttpRequest): The current request object.
+            user (User): The user requesting password reset.
+            token (str): The token to identify the password reset request.
+        """
     reset_link = f"https://your-frontend-domain.com/reset-password/{token}"
     subject = "Reset your Kolik password"
     html = f"""
@@ -19,10 +36,19 @@ def send_password_reset_email(request, user, token):
             <p>This link will expire in 30 minutes.</p>
             <p>If you didn't request this, ignore this email.</p>
         """
+    # Send Password Reset Email
     send_email(subject, user.email, html, request=request, user=user)
 
 @log_email_action(AuditAction.EMAIL_CHANGE_VERIFICATION_SENT)
 def send_email_change_verification(request, user, token):
+    """
+        Sends a confirmation email to verify a requested email change.
+
+        Args:
+            request (HttpRequest): The current request object.
+            user (User): The user who requested the email change.
+            token (str): The token to verify the email change.
+        """
     confirmation_link = f"https://your-frontend-domain.com/confirm-email-change/{token}"
     subject = "Confirm Your Kolik Email Change"
     html = f"""
@@ -32,4 +58,5 @@ def send_email_change_verification(request, user, token):
             <p>This link will expire in 30 minutes.</p>
             <p>If you didn't request this, ignore this email.</p>
         """
+    # Send the confirmation email to the pending new email address
     send_email(subject, user.pending_email, html, request=request, user=user)
