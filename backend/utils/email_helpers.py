@@ -60,3 +60,23 @@ def send_email_change_verification(request, user, token):
         """
     # Send the confirmation email to the pending new email address
     send_email(subject, user.pending_email, html, request=request, user=user)
+
+@log_email_action(AuditAction.PASSWORD_CHANGE_SUCCESS)
+def send_password_change_success_email(request, user):
+    subject = "Your Kolik Password Has Been Changed"
+    html = f"""
+        <p>Hello,</p>
+        <p>Your Kolik password was changed successfully. If this wasn't you, contact our support team immediately.</p>
+        <p>If you recognize this change, you can ignore this email.</p>
+    """
+    send_email(subject, user.email, html, request=request, user=user)
+
+@log_email_action(AuditAction.EMAIL_CHANGE_SUCCESS)
+def send_email_change_success_email(request, user):
+    subject = "Your Kolik Email Has Been Successfully Changed"
+    html = f"""
+        <p>Hello,</p>
+        <p>Your Kolik account email address has been successfully changed.</p>
+        <p>If this wasn't you, please contact our support team immediately.</p>
+    """
+    send_email(subject, user.email, html, request=request, user=user)

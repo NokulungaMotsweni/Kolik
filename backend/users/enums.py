@@ -13,6 +13,8 @@ class AuditAction(models.TextChoices):
     EMAIL_VERIFICATION_SENT = "email_verification_sent", "Email Verification Sent"
     PASSWORD_RESET_SENT = "password_reset_sent", "Password Reset Sent"
     EMAIL_CHANGE_VERIFICATION_SENT = "email_change_verification_sent", "Email Change Verification Sent"
+    PASSWORD_CHANGE_SUCCESS = "Password Change Success"
+    EMAIL_CHANGE_SUCCESS = "Email Change Success"
 
     # For Security
     USER_TEMP_BLOCKED = "user_temp_blocked", "User Temporarily Blocked"

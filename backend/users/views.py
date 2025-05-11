@@ -38,7 +38,7 @@ from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 
 from utils.email import send_email
-from utils.email_helpers import send_password_reset_email, send_email_change_verification
+from utils.email_helpers import send_password_reset_email, send_email_change_verification, send_password_change_success_email, send_password_change_success_email, send_email_change_success_email
 from utils.recaptcha import verify_recaptcha_v3, verify_recaptcha_v2
 
 User = get_user_model()
@@ -361,6 +361,12 @@ class PasswordResetConfirmView(APIView):
         verification.verified_at = timezone.now()
         verification.save()
 
+        send_password_change_success_email(
+        request=request,
+        user=user
+        )
+
+
         return Response({"message": "Password has been reset successfully."}, status=200)  
 
 
@@ -678,6 +684,8 @@ class ConfirmEmailChangeView(APIView):
         user.pending_email = None
         user.is_email_verified = True  
         user.save()
+
+        send_email_change_success_email(request, user)
 
         # Mark token as used
         verification.is_verified = True

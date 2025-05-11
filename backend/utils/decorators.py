@@ -2,6 +2,7 @@ from functools import wraps
 from users.models import AuditLog
 from users.enums import AuditAction, AuditStatus
 from utils.request import get_client_ip
+from django.contrib.auth.models import AnonymousUser
 
 def log_email_action(audit_action):
     """
@@ -21,7 +22,12 @@ def log_email_action(audit_action):
         def wrapper(*args, **kwargs):
             # Try to extract request and user from kwargs or args
             request = kwargs.get("request") or (args[0] if args else None)
-            user = kwargs.get("user") or getattr(request, "user", None)
+            user = kwargs.get("user")
+            if not user and request:
+                user = getattr(request, "user", None)
+
+            if isinstance(user, AnonymousUser) or user is None:
+                user = None
 
             # Extract IP, user-agent, and path for audit logging
             ip_address = get_client_ip(request) if request else None
